@@ -579,14 +579,12 @@
         return;
       }
 
-      // 收集参数
+      // 收集参数（适配新API文档）
       const options = {
-        resolution: currentOptions.resolution,
-        duration: currentOptions.duration,
-        cameraStyle: currentOptions.camera_style,
-        speed: currentOptions.speed,
-        audio: currentOptions.audio,
-        negativePrompt: negativePrompt.value.trim()
+        ratio: currentOptions.ratio || '16:9',
+        duration: currentOptions.duration || 5,
+        cameraStyle: currentOptions.camera_style || 'fixed',
+        audio: currentOptions.audio !== false
       };
 
       // 获取提示词
@@ -633,29 +631,30 @@
         updatePreviewStatus('生成中...');
         previewContainer.classList.add('generating');
 
-        // 模拟演示流程（同时也尝试真实轮询）
-        const useSimulation = !apiKey || apiKey.length < 10;
-        
-        if (useSimulation) {
-          // 演示模式
-          await simulateGeneration();
+        // 真实API轮询（按照新API文档的状态名）
+        const pollResult = await AI_API.pollTask(taskResult.taskId, function(status, progress) {
+          const statusText = {
+            'QUEUED': '排队中...',
+            'PENDING': '排队中...',
+            'IN_PROGRESS': '生成中...',
+            'RUNNING': '生成中...'
+          }[status] || '处理中...';
+          updateStatus('processing', `AI 正在生成视频 ${statusText} (${progress})`);
+        });
+
+        // 保存视频URL到全局变量，供下载使用
+        if (pollResult && pollResult.videoUrl) {
+          generatedVideoUrl = pollResult.videoUrl;
+          previewVideo.style.display = 'block';
+          previewPlaceholder.style.display = 'none';
+          previewVideo.src = generatedVideoUrl;
+          downloadBtn.disabled = false;
         } else {
-          // 真实轮询
-          let lastStatus = '';
-          await AI_API.pollTask(taskResult.taskId, function(status) {
-            lastStatus = status;
-            if (status === 'processing' || status === 'queued') {
-              updateStatus('processing', 'AI 正在生成视频，请稍候...');
-            }
-          });
-
-          updateStatus('completed', '视频生成完成！');
+          previewPlaceholder.querySelector('.placeholder-icon').textContent = '✅';
         }
 
-        // 生成完成（演示模式）
-        if (useSimulation) {
-          generatedVideoUrl = 'https://example.com/generated-video-' + Date.now() + '.mp4';
-        }
+        updateStatus('completed', '视频生成完成！');
+        updatePreviewStatus('✅ 视频生成完成！');
 
       } catch (error) {
         console.error('Generation failed:', error);
@@ -664,18 +663,6 @@
         App.showNotification('生成失败: ' + (error.message || '请重试'), 'error');
         finishGeneration();
         return;
-      }
-
-      // 显示视频（演示模式下没有真实视频，展示生成成功状态）
-      if (generatedVideoUrl) {
-        // 尝试设置真实视频 URL 
-        previewVideo.style.display = 'block';
-        previewPlaceholder.style.display = 'none';
-        previewVideo.src = generatedVideoUrl;
-      } else {
-        // 演示完成状态
-        previewPlaceholder.querySelector('.placeholder-icon').textContent = '✅';
-        updatePreviewStatus('✅ 视频生成完成');
       }
 
       previewContainer.classList.remove('generating');
@@ -692,24 +679,6 @@
 
       App.showNotification('视频生成成功！', 'success');
       finishGeneration();
-    }
-
-    async function simulateGeneration() {
-      // 模拟进度
-      updateStatus('processing', 'AI 正在分析提示词...');
-      await App.sleep(1500);
-
-      updateStatus('processing', '正在生成关键帧...');
-      await App.sleep(2000);
-
-      updateStatus('processing', '正在渲染视频...');
-      await App.sleep(2000);
-
-      updateStatus('processing', '正在进行后期处理...');
-      await App.sleep(1500);
-
-      updateStatus('completed', '视频生成完成！');
-      updatePreviewStatus('✅ 视频生成完成！请查看结果');
     }
 
     function updateStatus(type, msg) {
