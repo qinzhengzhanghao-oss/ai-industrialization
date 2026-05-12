@@ -6,6 +6,109 @@
   <title>AI 视频生成工作台 - AI 工业化</title>
   <meta name="description" content="AI 视频生成工作台，支持文生视频、图生视频、首尾帧控制，基于 Seedance 2.0 API">
   <link rel="stylesheet" href="../css/style-video.css">
+<style>
+/* @引用选择器样式 - 深色主题浮层 */
+.at-ref-selector {
+  position: absolute;
+  z-index: 1000;
+  background: #2a2a3e;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.15);
+  padding: 6px 0;
+  max-height: 240px;
+  overflow-y: auto;
+  min-width: 260px;
+  max-width: 380px;
+  display: none;
+}
+.at-ref-selector.visible {
+  display: block;
+}
+.at-ref-selector .selector-search-info {
+  padding: 6px 14px 4px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 2px;
+}
+.at-ref-selector .selector-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: #fff;
+  font-size: 13px;
+}
+.at-ref-selector .selector-item:hover,
+.at-ref-selector .selector-item.selected {
+  background: rgba(139, 92, 246, 0.2);
+}
+.at-ref-selector .selector-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #1e1e2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.at-ref-selector .selector-info {
+  flex: 1;
+  min-width: 0;
+}
+.at-ref-selector .selector-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+}
+.at-ref-selector .selector-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.at-ref-selector .selector-type-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.at-ref-selector .selector-type-tag.image-tag {
+  background: rgba(59,130,246,0.25);
+  color: #93c5fd;
+}
+.at-ref-selector .selector-type-tag.video-tag {
+  background: rgba(139,92,246,0.25);
+  color: #c4b5fd;
+}
+.at-ref-selector .selector-type-tag.audio-tag {
+  background: rgba(245,158,11,0.25);
+  color: #fcd34d;
+}
+.at-ref-selector::-webkit-scrollbar {
+  width: 4px;
+}
+.at-ref-selector::-webkit-scrollbar-track {
+  background: transparent;
+}
+.at-ref-selector::-webkit-scrollbar-thumb {
+  background: rgba(139,92,246,0.3);
+  border-radius: 2px;
+}
+
+/* 提示词区域包装器，用于 @选择器定位 */
+.multi-ref-section.prompt-wrapper {
+  position: relative;
+}
+</style>
 </head>
 <body>
   <!-- 动态背景 -->
@@ -196,11 +299,15 @@
 
           <!-- 多参模式 -->
           <div class="mode-content" id="mode-multi">
-            <!-- 提示词 -->
-            <div class="multi-ref-section">
-              <textarea class="prompt-textarea" id="prompt-multi" 
-                        placeholder="描述你想要生成的视频画面...&#10;&#10;例如：雨夜，霓虹灯照亮的东京街头，慢动作，电影质感"
+            <!-- 提示词（@引用选择器） -->
+            <div class="multi-ref-section prompt-wrapper">
+              <textarea class="prompt-textarea" id="prompt-multi"
+                        placeholder="描述你想要生成的视频画面...&#10;&#10;例如：雨夜，霓虹灯照亮的东京街头，慢动作，电影质感&#10;&#10;💡 输入 @ 可快速引用上传的素材"
                         rows="5" aria-label="多参视频描述"></textarea>
+              <!-- @引用选择器浮层 -->
+              <div class="at-ref-selector" id="at-ref-selector">
+                <div class="selector-search-info">选择要引用的素材</div>
+              </div>
             </div>
 
             <!-- 参考图片 -->
@@ -435,6 +542,9 @@
       document.querySelectorAll('.prompt-textarea').forEach(function(el) {
         el.addEventListener('input', checkGenerateEnabled);
       });
+
+      // 初始化 @引用选择器
+      bindAtRefSelector();
 
       // 初始隐藏多参模式内容
       document.getElementById('mode-multi').classList.remove('active');
@@ -817,6 +927,317 @@
     }
 
     // ============================================
+    // @引用选择器
+    // ============================================
+    var atRefSelector = document.getElementById('at-ref-selector');
+    var atRefSelectedIndex = -1;
+    var atRefItems = [];
+    var atRefActive = false;
+
+    /** 构建 @引用素材列表 */
+    function buildRefList() {
+      var list = [];
+      // 图片
+      for (var i = 0; i < multiFiles.images.length; i++) {
+        list.push({
+          index: i,
+          type: 'images',
+          label: '图片' + (i + 1),
+          typeLabel: '图片',
+          name: multiFiles.images[i].name,
+          file: multiFiles.images[i],
+          typeTag: 'image'
+        });
+      }
+      // 视频
+      for (var i = 0; i < multiFiles.videos.length; i++) {
+        list.push({
+          index: i,
+          type: 'videos',
+          label: '视频' + (i + 1),
+          typeLabel: '视频',
+          name: multiFiles.videos[i].name,
+          file: multiFiles.videos[i],
+          typeTag: 'video'
+        });
+      }
+      // 音频
+      for (var i = 0; i < multiFiles.audios.length; i++) {
+        list.push({
+          index: i,
+          type: 'audios',
+          label: '音频' + (i + 1),
+          typeLabel: '音频',
+          name: multiFiles.audios[i].name,
+          file: multiFiles.audios[i],
+          typeTag: 'audio'
+        });
+      }
+      return list;
+    }
+
+    /** 渲染选择器 */
+    function renderRefSelector() {
+      if (!atRefSelector) return;
+      var items = buildRefList();
+      atRefItems = items;
+
+      if (items.length === 0) {
+        atRefSelector.innerHTML = '<div class="selector-search-info" style="color:rgba(255,255,255,0.35);padding:14px;text-align:center;">暂无已上传素材</div>';
+        return;
+      }
+
+      var html = '<div class="selector-search-info">选择要引用的素材</div>';
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var tagClass = item.typeTag + '-tag';
+        html += '<div class="selector-item" data-index="' + i + '">';
+        // 缩略图
+        if (item.type === 'images') {
+          html += '<img class="selector-thumb" src="" alt="' + item.name + '">';
+        } else {
+          var icon = item.type === 'videos' ? '🎬' : '🎵';
+          html += '<span class="selector-thumb">' + icon + '</span>';
+        }
+        html += '<div class="selector-info">';
+        html += '<div class="selector-name">' + item.label + '</div>';
+        html += '<div class="selector-meta">';
+        html += '<span class="selector-type-tag ' + tagClass + '">' + item.typeLabel + '</span>';
+        html += '<span style="font-size:11px;color:rgba(255,255,255,0.35);">' + item.name + '</span>';
+        html += '</div></div></div>';
+      }
+      atRefSelector.innerHTML = html;
+
+      // 为每个 selector-item 绑定点击和鼠标悬停
+      var itemsEl = atRefSelector.querySelectorAll('.selector-item');
+      for (var j = 0; j < itemsEl.length; j++) {
+        (function(idx) {
+          itemsEl[j].addEventListener('click', function(e) {
+            e.stopPropagation();
+            insertAtRef(idx);
+          });
+          itemsEl[j].addEventListener('mouseenter', function() {
+            atRefSelectedIndex = idx;
+            updateRefSelection();
+          });
+        })(j);
+      }
+
+      // 加载图片缩略图 (异步)
+      loadRefThumbnails();
+    }
+
+    /** 异步加载图片缩略图 */
+    function loadRefThumbnails() {
+      var imgEls = atRefSelector.querySelectorAll('.selector-thumb');
+      var items = buildRefList();
+      var imgIdx = 0;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type === 'images') {
+          var thumb = imgEls[imgIdx];
+          if (thumb && items[i].file) {
+            (function(img, file) {
+              var reader = new FileReader();
+              reader.onload = function(e) { img.src = e.target.result; };
+              reader.readAsDataURL(file);
+            })(thumb, items[i].file);
+          }
+          imgIdx++;
+        }
+      }
+    }
+
+    /** 更新选中状态 */
+    function updateRefSelection() {
+      if (!atRefSelector) return;
+      var items = atRefSelector.querySelectorAll('.selector-item');
+      for (var i = 0; i < items.length; i++) {
+        items[i].classList.toggle('selected', i === atRefSelectedIndex);
+      }
+    }
+
+    /** 插入 @标签到 textarea */
+    function insertAtRef(index) {
+      if (!promptMulti || index < 0 || index >= atRefItems.length) return;
+      var item = atRefItems[index];
+      var tag = '[@' + item.label + ']';
+
+      var val = promptMulti.value;
+      var cursorPos = promptMulti.selectionStart;
+
+      // 找到当前 @ 的位置（从光标往前找最后一个 @）
+      var atPos = -1;
+      for (var i = cursorPos - 1; i >= 0; i--) {
+        if (val[i] === '@') {
+          atPos = i;
+          break;
+        }
+      }
+
+      // 替换从 @ 到光标的内容为 [@xxx]
+      if (atPos >= 0) {
+        var before = val.substring(0, atPos);
+        var after = val.substring(cursorPos);
+        // 如果 @ 后面有已输入的文字，清除它们
+        promptMulti.value = before + tag + after;
+        var newPos = atPos + tag.length;
+        promptMulti.setSelectionRange(newPos, newPos);
+      } else {
+        // 备选：在光标处插入
+        var before = val.substring(0, cursorPos);
+        var after = val.substring(cursorPos);
+        promptMulti.value = before + tag + after;
+        promptMulti.setSelectionRange(cursorPos + tag.length, cursorPos + tag.length);
+      }
+
+      promptMulti.focus();
+      hideRefSelector();
+      checkGenerateEnabled();
+    }
+
+    /** 显示选择器 */
+    function showRefSelector() {
+      if (!atRefSelector) return;
+      atRefActive = true;
+      renderRefSelector();
+
+      // 定位到 textarea 下方
+      var rect = promptMulti.getBoundingClientRect();
+      var wrapper = promptMulti.closest('.prompt-wrapper');
+      if (wrapper) {
+        wrapper.style.position = 'relative';
+        atRefSelector.style.position = 'absolute';
+        atRefSelector.style.top = (promptMulti.offsetHeight + 4) + 'px';
+        atRefSelector.style.left = '0px';
+        atRefSelector.style.right = '0px';
+        atRefSelector.style.width = '100%';
+      } else {
+        atRefSelector.style.position = 'fixed';
+        atRefSelector.style.top = (rect.bottom + 4) + 'px';
+        atRefSelector.style.left = rect.left + 'px';
+        atRefSelector.style.width = Math.max(rect.width, 260) + 'px';
+      }
+
+      atRefSelector.classList.add('visible');
+      atRefSelectedIndex = 0;
+      updateRefSelection();
+    }
+
+    /** 隐藏选择器 */
+    function hideRefSelector() {
+      if (!atRefSelector) return;
+      atRefActive = false;
+      atRefSelector.classList.remove('visible');
+      atRefSelectedIndex = -1;
+    }
+
+    /** 监听 @ 输入 */
+    function bindAtRefSelector() {
+      if (!promptMulti) return;
+
+      promptMulti.addEventListener('input', function(e) {
+        if (currentInputMode !== 'multi') {
+          hideRefSelector();
+          return;
+        }
+
+        var val = promptMulti.value;
+        var cursorPos = promptMulti.selectionStart;
+
+        // 检查光标前是否有未闭合的 @
+        var lastAt = val.lastIndexOf('@', cursorPos);
+        if (lastAt >= 0) {
+          // 检查 @ 到光标之间是否有 [ 或 ] 或换行（表示已形成标签或终止符）
+          var between = val.substring(lastAt, cursorPos);
+          var hasBracket = between.indexOf('[') >= 0 || between.indexOf(']') >= 0;
+          // 如果 @ 前面是 [，说明是已存在的 [@xxx] 标签的一部分，不触发
+          var hasLeadingBracket = lastAt > 0 && val[lastAt - 1] === '[';
+
+          if (!hasBracket && !hasLeadingBracket) {
+            // 检查是否有素材
+            var totalFiles = multiFiles.images.length + multiFiles.videos.length + multiFiles.audios.length;
+            if (totalFiles > 0) {
+              showRefSelector();
+              return;
+            }
+          }
+        }
+
+        hideRefSelector();
+      });
+
+      // 键盘导航
+      promptMulti.addEventListener('keydown', function(e) {
+        if (!atRefActive || !atRefSelector) return;
+
+        var items = atRefSelector.querySelectorAll('.selector-item');
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          atRefSelectedIndex = Math.min(atRefSelectedIndex + 1, items.length - 1);
+          updateRefSelection();
+          // 确保选中项可见
+          var sel = items[atRefSelectedIndex];
+          if (sel) sel.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          atRefSelectedIndex = Math.max(atRefSelectedIndex - 1, 0);
+          updateRefSelection();
+          var sel = items[atRefSelectedIndex];
+          if (sel) sel.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+          if (atRefSelectedIndex >= 0 && atRefSelectedIndex < atRefItems.length) {
+            e.preventDefault();
+            insertAtRef(atRefSelectedIndex);
+          }
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          hideRefSelector();
+        }
+      });
+
+      // 点击外部关闭
+      document.addEventListener('click', function(e) {
+        if (atRefActive && atRefSelector && !atRefSelector.contains(e.target) && e.target !== promptMulti) {
+          hideRefSelector();
+        }
+      });
+    }
+
+    // 初始化 @选择器（在 bindMultiUploads 之后调用）
+    // bindAtRefSelector 会在 init 中调用
+
+    // @引用解析函数：解析提示词中的 [@xxx] 标签，返回解析后的提示词和文件引用
+    function parseAtRefs(promptText) {
+      if (!promptText) return { prompt: '', refs: { images: [], videos: [], audios: [] } };
+
+      // 获取所有素材列表
+      var allRefs = buildRefList();
+
+      // 找出所有 [@xxx] 标签
+      var refMap = {}; // 标签名 -> 素材信息
+      for (var i = 0; i < allRefs.length; i++) {
+        refMap['[@' + allRefs[i].label + ']'] = allRefs[i];
+      }
+
+      // 替换并收集引用
+      var refs = { images: [], videos: [], audios: [] };
+      var result = promptText;
+
+      for (var tag in refMap) {
+        if (result.indexOf(tag) >= 0) {
+          var ref = refMap[tag];
+          refs[ref.type].push(ref.file);
+          // 替换标签为描述性文本
+          result = result.split(tag).join('[' + ref.typeLabel + '参考]');
+        }
+      }
+
+      return { prompt: result, refs: refs };
+    }
+
+    // ============================================
     // 生成按钮
     // ============================================
     function checkGenerateEnabled() {
@@ -865,16 +1286,29 @@
 
       try {
         if (currentInputMode === 'multi') {
-          // 多参模式
-          prompt = promptMulti.value.trim();
-          if (!prompt) {
+          // 多参模式 - 解析 @引用
+          var rawPrompt = promptMulti.value.trim();
+          if (!rawPrompt) {
             App.showNotification('请输入视频描述', 'warning');
             return;
           }
+          // 解析 [@xxx] 标签
+          var parsed = parseAtRefs(rawPrompt);
+          prompt = parsed.prompt;
+          // 合并文件：@引用解析出来的 + 所有已上传的（作为补充参考）
+          var allImages = parsed.refs.images.slice();
+          var allVideos = parsed.refs.videos.slice();
+          var allAudios = parsed.refs.audios.slice();
+          // 如果用户没有用 @引用，但上传了文件，仍然全部传入
+          if (allImages.length === 0 && allVideos.length === 0 && allAudios.length === 0) {
+            allImages = multiFiles.images.slice();
+            allVideos = multiFiles.videos.slice();
+            allAudios = multiFiles.audios.slice();
+          }
           taskPromise = AI_API.multiParamVideo(prompt, {
-            images: multiFiles.images.length ? multiFiles.images : undefined,
-            videos: multiFiles.videos.length ? multiFiles.videos : undefined,
-            audios: multiFiles.audios.length ? multiFiles.audios : undefined
+            images: allImages.length ? allImages : undefined,
+            videos: allVideos.length ? allVideos : undefined,
+            audios: allAudios.length ? allAudios : undefined
           }, options);
         } else if (currentMode === 'text') {
           prompt = promptText.value.trim();
