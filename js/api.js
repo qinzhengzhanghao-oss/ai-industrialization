@@ -110,6 +110,70 @@ const AI_API = {
     return this._submit(body);
   },
 
+  /**
+   * ============ 4. 多参模式 ============
+   * 同时提交图片/视频/音频参考
+   */
+  async multiParamVideo(prompt, files = {}, options = {}) {
+    if (!prompt?.trim()) throw new Error('请输入视频描述提示词');
+
+    // 上传所有参考文件
+    const images = [];
+    if (files.images && files.images.length) {
+      for (const file of files.images) {
+        const url = await this._uploadImage(file);
+        images.push(url);
+      }
+    }
+
+    const videos = [];
+    if (files.videos && files.videos.length) {
+      for (const file of files.videos) {
+        const url = await this._uploadImage(file);
+        videos.push(url);
+      }
+    }
+
+    const audios = [];
+    if (files.audios && files.audios.length) {
+      for (const file of files.audios) {
+        const url = await this._uploadImage(file);
+        audios.push(url);
+      }
+    }
+
+    let promptText = prompt.trim();
+    if (options.cameraStyle && options.cameraStyle !== 'fixed') {
+      const motionMap = {
+        push: '，镜头缓缓推近',
+        pull: '，镜头缓缓拉远',
+        left: '，镜头从右向左平移',
+        right: '，镜头从左向右平移',
+        rotate: '，镜头环绕旋转',
+        up: '，镜头向上移动',
+        down: '，镜头向下移动'
+      };
+      promptText += motionMap[options.cameraStyle] || '';
+    }
+
+    const body = {
+      model: 'seedance-2.0',
+      prompt: promptText,
+      metadata: {
+        generate_audio: options.audio !== false,
+        ratio: this._getRatio(options.ratio),
+        duration: options.duration || 5,
+        watermark: false
+      }
+    };
+
+    if (images.length > 0) body.images = images;
+    if (videos.length > 0) body.videos = videos;
+    if (audios.length > 0) body.audios = audios;
+
+    return this._submit(body);
+  },
+
   /** 统一提交任务 */
   async _submit(body) {
     const resp = await fetch(`${this.config.baseUrl}/video/generations`, {

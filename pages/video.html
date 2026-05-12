@@ -50,6 +50,12 @@
       <!-- ======== 左侧面板：模式选择 & 参数配置 ======== -->
       <aside class="left-panel glass">
 
+        <!-- 输入模式切换（基本模式/多参模式） -->
+        <div class="input-mode-tabs" role="tablist" aria-label="输入模式">
+          <button class="input-mode-tab active" data-input-mode="basic" role="tab" aria-selected="true">基本模式</button>
+          <button class="input-mode-tab" data-input-mode="multi" role="tab" aria-selected="false">多参模式</button>
+        </div>
+
         <!-- 模式切换 Tabs -->
         <div class="mode-tabs" role="tablist" aria-label="生成模式">
           <button class="mode-tab active" data-mode="text" role="tab" aria-selected="true">
@@ -188,6 +194,55 @@
             </div>
           </div>
 
+          <!-- 多参模式 -->
+          <div class="mode-content" id="mode-multi">
+            <!-- 提示词 -->
+            <div class="multi-ref-section">
+              <textarea class="prompt-textarea" id="prompt-multi" 
+                        placeholder="描述你想要生成的视频画面...&#10;&#10;例如：雨夜，霓虹灯照亮的东京街头，慢动作，电影质感"
+                        rows="5" aria-label="多参视频描述"></textarea>
+            </div>
+
+            <!-- 参考图片 -->
+            <div class="multi-ref-section">
+              <div class="multi-ref-header">
+                <span class="multi-ref-label">🖼️ 参考图片 <span class="multi-ref-count" id="multi-img-count">0</span></span>
+              </div>
+              <div class="multi-upload-area" id="multi-img-area">
+                <div class="upload-icon-small">🖼️</div>
+                <div class="upload-text-small">拖拽或点击上传图片（支持多张）</div>
+                <input type="file" accept="image/jpeg,image/png,image/webp" id="multi-img-input" multiple aria-label="上传参考图片">
+              </div>
+              <div class="multi-ref-list" id="multi-img-list"></div>
+            </div>
+
+            <!-- 参考视频 -->
+            <div class="multi-ref-section">
+              <div class="multi-ref-header">
+                <span class="multi-ref-label">🎬 参考视频 <span class="multi-ref-count" id="multi-video-count">0</span></span>
+              </div>
+              <div class="multi-upload-area" id="multi-video-area">
+                <div class="upload-icon-small">🎬</div>
+                <div class="upload-text-small">拖拽或点击上传视频</div>
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" id="multi-video-input" multiple aria-label="上传参考视频">
+              </div>
+              <div class="multi-ref-list" id="multi-video-list"></div>
+            </div>
+
+            <!-- 参考音频 -->
+            <div class="multi-ref-section">
+              <div class="multi-ref-header">
+                <span class="multi-ref-label">🎵 参考音频 <span class="multi-ref-count" id="multi-audio-count">0</span></span>
+              </div>
+              <div class="multi-upload-area" id="multi-audio-area">
+                <div class="upload-icon-small">🎵</div>
+                <div class="upload-text-small">拖拽或点击上传音频</div>
+                <input type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3" id="multi-audio-input" multiple aria-label="上传参考音频">
+              </div>
+              <div class="multi-ref-list" id="multi-audio-list"></div>
+            </div>
+          </div>
+
           <!-- 生成按钮 -->
           <button class="generate-btn" id="generate-btn" disabled>
             <span class="btn-icon">⚡</span>
@@ -315,9 +370,28 @@
     const promptFrame = document.getElementById('prompt-frame');
 
     // ============================================
+    // 多参模式 DOM 引用
+    // ============================================
+    const inputModeTabs = document.querySelectorAll('.input-mode-tab');
+    const promptMulti = document.getElementById('prompt-multi');
+    const multiImgInput = document.getElementById('multi-img-input');
+    const multiImgArea = document.getElementById('multi-img-area');
+    const multiImgList = document.getElementById('multi-img-list');
+    const multiImgCount = document.getElementById('multi-img-count');
+    const multiVideoInput = document.getElementById('multi-video-input');
+    const multiVideoArea = document.getElementById('multi-video-area');
+    const multiVideoList = document.getElementById('multi-video-list');
+    const multiVideoCount = document.getElementById('multi-video-count');
+    const multiAudioInput = document.getElementById('multi-audio-input');
+    const multiAudioArea = document.getElementById('multi-audio-area');
+    const multiAudioList = document.getElementById('multi-audio-list');
+    const multiAudioCount = document.getElementById('multi-audio-count');
+
+    // ============================================
     // State
     // ============================================
     let currentMode = 'text';
+    let currentInputMode = 'basic'; // 'basic' or 'multi'
     let currentOptions = {
       resolution: '1080p',
       duration: 5,
@@ -330,6 +404,13 @@
     let history = JSON.parse(localStorage.getItem('ai_video_history') || '[]');
     let uploadedImages = {};
 
+    // 多参模式状态
+    let multiFiles = {
+      images: [],
+      videos: [],
+      audios: []
+    };
+
     // ============================================
     // 初始化
     // ============================================
@@ -341,10 +422,12 @@
 
       // 事件绑定
       bindModeTabs();
+      bindInputModeTabs();
       bindOptions();
       bindGenerate();
       // API Key 已内置
       bindUploads();
+      bindMultiUploads();
       bindPreview();
       checkGenerateEnabled();
 
@@ -352,6 +435,9 @@
       document.querySelectorAll('.prompt-textarea').forEach(function(el) {
         el.addEventListener('input', checkGenerateEnabled);
       });
+
+      // 初始隐藏多参模式内容
+      document.getElementById('mode-multi').classList.remove('active');
     }
 
     // ============================================
@@ -390,6 +476,64 @@
           // 更新标签
           const labels = { text: '文生视频', image: '图生视频', frame: '首尾帧控制' };
           modeLabel.textContent = labels[mode] || mode;
+
+          checkGenerateEnabled();
+        });
+      });
+    }
+
+    // ============================================
+    // 输入模式切换（基本模式/多参模式）
+    // ============================================
+    function bindInputModeTabs() {
+      inputModeTabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          const mode = tab.dataset.inputMode;
+          if (mode === currentInputMode) return;
+          if (isGenerating) {
+            App.showNotification('请等待当前任务完成后切换', 'warning');
+            return;
+          }
+
+          // 更新Tab状态
+          inputModeTabs.forEach(function(t) {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          tab.classList.add('active');
+          tab.setAttribute('aria-selected', 'true');
+
+          currentInputMode = mode;
+
+          // 切换中间面板内容
+          // 基本模式：显示 mode-text/image/frame
+          // 多参模式：显示 mode-multi
+          if (mode === 'multi') {
+            // 隐藏基本模式的三个内容，显示多参模式
+            Object.keys(modeContents).forEach(function(key) {
+              if (modeContents[key]) {
+                modeContents[key].classList.remove('active');
+              }
+            });
+            var multiContent = document.getElementById('mode-multi');
+            if (multiContent) multiContent.classList.add('active');
+
+            // 更新标签
+            modeLabel.textContent = '多参模式';
+          } else {
+            // 隐藏多参模式，切回当前选中的生成模式
+            var multiContent = document.getElementById('mode-multi');
+            if (multiContent) multiContent.classList.remove('active');
+
+            // 显示当前选中的模式内容
+            if (modeContents[currentMode]) {
+              modeContents[currentMode].classList.add('active');
+            }
+
+            // 更新标签
+            var labels = { text: '文生视频', image: '图生视频', frame: '首尾帧控制' };
+            modeLabel.textContent = labels[currentMode] || currentMode;
+          }
 
           checkGenerateEnabled();
         });
@@ -530,11 +674,156 @@
     }
 
     // ============================================
+    // 多参模式上传
+    // ============================================
+    function bindMultiUploads() {
+      // 图片上传
+      setupMultiUpload(multiImgInput, multiImgArea, multiImgList, multiImgCount, 'images', 'image');
+      // 视频上传
+      setupMultiUpload(multiVideoInput, multiVideoArea, multiVideoList, multiVideoCount, 'videos', 'video');
+      // 音频上传
+      setupMultiUpload(multiAudioInput, multiAudioArea, multiAudioList, multiAudioCount, 'audios', 'audio');
+    }
+
+    function setupMultiUpload(input, area, listEl, countEl, typeKey, fileType) {
+      if (!input || !area) return;
+
+      var acceptTypes;
+      if (fileType === 'image') {
+        acceptTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      } else if (fileType === 'video') {
+        acceptTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+      } else {
+        acceptTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3'];
+      }
+
+      function addFiles(fileList) {
+        var added = 0;
+        for (var i = 0; i < fileList.length; i++) {
+          var file = fileList[i];
+          var isTypeOk = false;
+          for (var j = 0; j < acceptTypes.length; j++) {
+            if (file.type === acceptTypes[j] || file.type.startsWith(fileType + '/')) {
+              isTypeOk = true;
+              break;
+            }
+          }
+          // 宽松检查 - 如果type为空也接受
+          if (!isTypeOk && file.type) {
+            App.showNotification('不支持的文件类型: ' + file.name, 'warning');
+            continue;
+          }
+
+          if (file.size > 50 * 1024 * 1024) {
+            App.showNotification('文件大小不能超过 50MB: ' + file.name, 'warning');
+            continue;
+          }
+
+          multiFiles[typeKey].push(file);
+          added++;
+        }
+        renderMultiList(typeKey, listEl, countEl);
+        checkGenerateEnabled();
+      }
+
+      // 点击上传
+      input.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files.length) {
+          addFiles(e.target.files);
+        }
+        // 重置input，允许重复选择同一个文件
+        input.value = '';
+      });
+
+      // 拖拽上传
+      ['dragenter', 'dragover'].forEach(function(evt) {
+        area.addEventListener(evt, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          area.classList.add('drag-over');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(function(evt) {
+        area.addEventListener(evt, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          area.classList.remove('drag-over');
+          if (evt === 'drop' && e.dataTransfer.files.length) {
+            addFiles(e.dataTransfer.files);
+          }
+        });
+      });
+    }
+
+    function renderMultiList(typeKey, listEl, countEl) {
+      var files = multiFiles[typeKey];
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      // 更新计数
+      if (countEl) countEl.textContent = files.length;
+
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var item = document.createElement('div');
+        item.className = 'multi-ref-item' + (typeKey === 'images' ? ' image-item' : ' file-item');
+
+        // 删除按钮
+        var delBtn = document.createElement('button');
+        delBtn.className = 'multi-ref-delete';
+        delBtn.textContent = '✕';
+        delBtn.setAttribute('aria-label', '删除 ' + file.name);
+        (function(idx) {
+          delBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            multiFiles[typeKey].splice(idx, 1);
+            renderMultiList(typeKey, listEl, countEl);
+            checkGenerateEnabled();
+          });
+        })(i);
+        item.appendChild(delBtn);
+
+        if (typeKey === 'images') {
+          // 图片：显示缩略图
+          var img = document.createElement('img');
+          img.alt = file.name;
+          var reader = new FileReader();
+          reader.onload = (function(imgEl) {
+            return function(e) {
+              imgEl.src = e.target.result;
+            };
+          })(img);
+          reader.readAsDataURL(file);
+          item.appendChild(img);
+        } else {
+          // 视频/音频：显示文件名
+          var icon = document.createElement('span');
+          icon.className = 'file-icon';
+          icon.textContent = typeKey === 'videos' ? '🎬' : '🎵';
+          item.appendChild(icon);
+
+          var nameSpan = document.createElement('span');
+          nameSpan.className = 'file-name';
+          nameSpan.textContent = file.name;
+          item.appendChild(nameSpan);
+        }
+
+        listEl.appendChild(item);
+      }
+    }
+
+    // ============================================
     // 生成按钮
     // ============================================
     function checkGenerateEnabled() {
       if (isGenerating) {
         generateBtn.disabled = true;
+        return;
+      }
+
+      if (currentInputMode === 'multi') {
+        generateBtn.disabled = !promptMulti.value.trim();
         return;
       }
 
@@ -572,7 +861,19 @@
       let taskPromise = null;
 
       try {
-        if (currentMode === 'text') {
+        if (currentInputMode === 'multi') {
+          // 多参模式
+          prompt = promptMulti.value.trim();
+          if (!prompt) {
+            App.showNotification('请输入视频描述', 'warning');
+            return;
+          }
+          taskPromise = AI_API.multiParamVideo(prompt, {
+            images: multiFiles.images.length ? multiFiles.images : undefined,
+            videos: multiFiles.videos.length ? multiFiles.videos : undefined,
+            audios: multiFiles.audios.length ? multiFiles.audios : undefined
+          }, options);
+        } else if (currentMode === 'text') {
           prompt = promptText.value.trim();
           if (!prompt) {
             App.showNotification('请输入视频描述', 'warning');
@@ -651,7 +952,7 @@
 
       // 添加到历史
       addToHistory({
-        mode: currentMode,
+        mode: currentInputMode === 'multi' ? 'multi' : currentMode,
         prompt: prompt.substring(0, 50),
         options: options,
         timestamp: Date.now()
@@ -744,13 +1045,13 @@
         var item = document.createElement('div');
         item.className = 'history-item';
 
-        var modeIcons = { text: '✏️', image: '🖼️', frame: '🎞️' };
-        var modeLabels = { text: '文生', image: '图生', frame: '首尾帧' };
+        var modeIcons = { text: '✏️', image: '🖼️', frame: '🎞️', multi: '🔧' };
+        var modeLabels = { text: '文生', image: '图生', frame: '首尾帧', multi: '多参' };
 
         item.innerHTML = 
           '<div class="history-thumb">' + (modeIcons[record.mode] || '🎬') + '</div>' +
           '<div class="history-meta">' + 
-            (modeLabels[record.mode] || record.mode) + ' · ' +
+            (modeLabels[record.mode] || record.mode) + ' · ' + 
             App.formatDate(record.timestamp, 'HH:mm') +
           '</div>';
 
