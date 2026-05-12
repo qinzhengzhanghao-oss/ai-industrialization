@@ -7,28 +7,21 @@
 
 const AI_API = {
   config: {
-    apiKey: localStorage.getItem('ai_industrial_api_key') || '',
     baseUrl: 'https://metamind.yun/v1',
     pollInterval: 5000,
     maxPollAttempts: 60
   },
 
-  setApiKey(key) {
-    this.config.apiKey = key;
-    localStorage.setItem('ai_industrial_api_key', key);
-  },
-
+  // API Key 已内置，用户无需配置
   getApiKey() {
-    return this.config.apiKey || localStorage.getItem('ai_industrial_api_key') || '';
+    return 'sk-GGUj6MUyzlWWJGBvOAiy92NaZSDxzcdIdyA9tgwq94m0gyzO';
   },
 
   /** HEADERS */
   _headers() {
-    const key = this.getApiKey();
-    if (!key) throw new Error('请先设置 API Key');
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`
+      'Authorization': `Bearer ${this.getApiKey()}`
     };
   },
 

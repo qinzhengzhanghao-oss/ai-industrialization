@@ -246,25 +246,11 @@
           </button>
         </div>
 
-        <!-- API Key 设置 -->
+        <!-- API 已内置 -->
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-card);">
-          <div class="panel-section-title" style="margin-bottom:6px;">API Key</div>
-          <div style="display:flex;gap:6px;">
-            <input type="password" class="negative-input" id="api-key-input" 
-                   placeholder="输入 Seedance API Key" 
-                   style="min-height:36px;font-size:12px;flex:1;">
-            <button id="api-key-save" style="
-              padding:8px 12px;
-              background:var(--gradient-main);
-              border:none;
-              border-radius:var(--radius-sm);
-              color:white;
-              font-size:12px;
-              font-weight:600;
-              cursor:pointer;
-              white-space:nowrap;
-              transition:var(--transition);
-            ">保存</button>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">
+            💡 API 已内置配置，直接输入提示词即可生成。<br>
+            余额不足请登录后台充值。
           </div>
         </div>
 
@@ -304,9 +290,7 @@
     const downloadBtn = document.getElementById('download-btn');
     const regenerateBtn = document.getElementById('regenerate-btn');
 
-    // API Key
-    const apiKeyInput = document.getElementById('api-key-input');
-    const apiKeySave = document.getElementById('api-key-save');
+    // API Key 已内置在 api.js
 
     // History
     const historyScroll = document.getElementById('history-scroll');
@@ -347,15 +331,10 @@
     let uploadedImages = {};
 
     // ============================================
-    // 初始化 - 加载保存的 API Key 和历史
+    // 初始化
     // ============================================
     function init() {
-      // 加载 API Key
-      const savedKey = AI_API.getApiKey();
-      if (savedKey) {
-        apiKeyInput.value = savedKey;
-        generateBtn.disabled = false;
-      }
+      generateBtn.disabled = false;
 
       // 加载历史记录
       renderHistory();
@@ -364,7 +343,7 @@
       bindModeTabs();
       bindOptions();
       bindGenerate();
-      bindApiKey();
+      // API Key 已内置
       bindUploads();
       bindPreview();
       checkGenerateEnabled();
@@ -434,6 +413,18 @@
 
             if (optionName === 'resolution') {
               currentOptions.resolution = value;
+              // 分辨率映射到API需要的ratio
+              const ratioMap = {
+                '720p': '16:9',
+                '1080p': '16:9',
+                '2k': '16:9'
+              };
+              // 如果用户选择了9:16的比例选项
+              if (value === '9:16' || value === '1:1') {
+                currentOptions.ratio = value;
+              } else {
+                currentOptions.ratio = '16:9';
+              }
             } else if (optionName === 'duration') {
               currentOptions.duration = parseInt(value);
             } else if (optionName === 'camera_style') {
@@ -547,12 +538,6 @@
         return;
       }
 
-      const apiKey = AI_API.getApiKey();
-      if (!apiKey) {
-        generateBtn.disabled = true;
-        return;
-      }
-
       if (currentMode === 'text') {
         generateBtn.disabled = !promptText.value.trim();
       } else if (currentMode === 'image') {
@@ -572,12 +557,7 @@
     async function startGeneration() {
       if (isGenerating) return;
 
-      // 检查 API Key
-      const apiKey = AI_API.getApiKey();
-      if (!apiKey) {
-        App.showNotification('请先在右侧面板设置 API Key', 'warning');
-        return;
-      }
+      // API Key 已内置
 
       // 收集参数（适配新API文档）
       const options = {
@@ -728,26 +708,10 @@
     }
 
     // ============================================
-    // API Key 管理
+    // API Key 管理（已内置）
     // ============================================
     function bindApiKey() {
-      apiKeySave.addEventListener('click', function() {
-        const key = apiKeyInput.value.trim();
-        if (!key) {
-          App.showNotification('请输入 API Key', 'warning');
-          return;
-        }
-        AI_API.setApiKey(key);
-        generateBtn.disabled = false;
-        App.showNotification('API Key 已保存', 'success');
-        checkGenerateEnabled();
-      });
-
-      apiKeyInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          apiKeySave.click();
-        }
-      });
+      // API Key 已内置在 api.js 中，无需配置
     }
 
     // ============================================
