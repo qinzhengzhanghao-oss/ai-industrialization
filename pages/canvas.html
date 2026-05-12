@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能画布 - AI工业化</title>
+  <style>
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-card: #1a1a2e;
+      --bg-surface: rgba(26, 26, 46, 0.7);
+      --bg-glass: rgba(255, 255, 255, 0.04);
+      --text-primary: #f1f1f6;
+      --text-secondary: #8888a0;
+      --text-muted: #555570;
+      --brand-purple: #7C3AED;
+      --brand-green: #1DB954;
+      --brand-gradient: linear-gradient(135deg, #7C3AED, #1DB954);
+      --border-glass: rgba(255, 255, 255, 0.06);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+      position: relative;
+      z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    .nav-logo {
+      font-size: 20px;
+      font-weight: 700;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      cursor: pointer;
+    }
+    .nav-links { display: flex; gap: 24px; margin-left: 32px; }
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: var(--transition);
+      position: relative;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text-primary); }
+    .nav-links a.active::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 2px;
+      background: var(--brand-gradient);
+      border-radius: 1px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border-glass);
+      background: var(--bg-glass);
+      color: var(--text-primary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.1); }
+    .nav-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--brand-gradient);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* === Full Canvas Layout === */
+    .canvas-layout {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 60px);
+      position: relative;
+    }
+
+    /* Toolbar */
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 24px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-glass);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tool-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .tool-btn {
+      padding: 8px 14px;
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .tool-btn:hover { border-color: var(--brand-purple); color: var(--text-primary); }
+    .tool-btn.active {
+      background: rgba(124, 58, 237, 0.2);
+      border-color: var(--brand-purple);
+      color: #fff;
+    }
+    .tool-btn svg { width: 16px; height: 16px; }
+    .tool-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border-glass);
+      margin: 0 8px;
+    }
+
+    /* Canvas Main Area */
+    .canvas-main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Layer Panel */
+    .layer-panel {
+      width: 200px;
+      min-width: 200px;
+      padding: 16px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-glass);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    .layer-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .layer-panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .add-layer-btn {
+      padding: 4px 10px;
+      border: 1px solid var(--border-glass);
+      border-radius: 6px;
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .add-layer-btn:hover { border-color: var(--brand-purple); color: var(--text-primary); }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .layer-item:hover, .layer-item.active {
+      border-color: var(--brand-purple);
+      background: rgba(124, 58, 237, 0.08);
+    }
+    .layer-item .thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #2a1a3e, #1a2a2e);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .layer-item .name {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .layer-item .actions {
+      display: flex;
+      gap: 4px;
+    }
+    .layer-item .actions button {
+      width: 22px; height: 22px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .layer-item .actions button:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+    /* Canvas Center */
+    .canvas-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: repeating-conic-gradient(#13131f 0% 25%, transparent 0% 50%) 0 0 / 20px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .canvas-stage {
+      width: 70%;
+      max-width: 800px;
+      aspect-ratio: 4/3;
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+    .canvas-stage.droppable {
+      border-color: var(--brand-purple);
+      box-shadow: 0 0 32px rgba(124,58,237,0.2);
+    }
+    .canvas-empty-state {
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .canvas-empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .canvas-empty-state p { font-size: 14px; }
+    .canvas-empty-state .sub { font-size: 12px; margin-top: 6px; color: var(--text-muted); }
+
+    /* Property Panel (right) */
+    .property-panel {
+      width: 220px;
+      min-width: 220px;
+      padding: 16px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-glass);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .prop-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .prop-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .prop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .prop-row .label { color: var(--text-secondary); }
+    .prop-row .value { color: var(--text-primary); font-size: 12px; }
+    .prop-color {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border-glass);
+      cursor: pointer;
+      background: var(--brand-purple);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--text-muted);
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--brand-gradient);
+      cursor: pointer;
+    }
+
+    /* Bottom Action Bar */
+    .canvas-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 24px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-glass);
+    }
+    .canvas-action-btn {
+      padding: 8px 20px;
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .canvas-action-btn:hover { border-color: var(--brand-purple); color: var(--text-primary); }
+    .canvas-action-btn.primary {
+      background: var(--brand-gradient);
+      color: #fff;
+      border: none;
+    }
+    .canvas-action-btn.primary:hover {
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+      transform: translateY(-1px);
+    }
+
+    /* === Feature Cards (below canvas) === */
+    .feature-section {
+      padding: 40px 48px 60px;
+      background: var(--bg-deep);
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-glass);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+      border-color: rgba(124,58,237,0.3);
+    }
+    .feature-card-img {
+      width: 100%;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card-img .label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      z-index: 1;
+    }
+    .feature-card-body {
+      padding: 20px;
+    }
+    .feature-card-body h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .feature-card-body p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Mobile */
+    @media (max-width: 1024px) {
+      .layer-panel { width: 160px; min-width: 160px; }
+      .property-panel { width: 180px; min-width: 180px; }
+      .canvas-stage { width: 85%; }
+    }
+
+    @media (max-width: 768px) {
+      .navbar { padding: 0 16px; }
+      .nav-links { display: none; }
+      .canvas-layout { height: auto; min-height: 100vh; }
+
+      .canvas-main { flex-direction: column; }
+      .layer-panel, .property-panel {
+        width: 100%;
+        min-width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 12px 16px;
+        border: none;
+        border-bottom: 1px solid var(--border-glass);
+      }
+      .layer-panel-header, .property-panel-header { display: none; }
+      .layer-item { min-width: 140px; flex-shrink: 0; }
+      .canvas-center { min-height: 300px; }
+      .canvas-stage { width: 92%; max-height: 300px; }
+
+      .canvas-toolbar { padding: 8px 12px; }
+      .tool-btn { padding: 6px 10px; font-size: 11px; }
+      .canvas-actions { padding: 10px 16px; flex-wrap: wrap; }
+
+      .feature-section { padding: 24px 16px 40px; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="nav-logo" onclick="location.href='../index.html'">AI 工业化</span>
+      <div class="nav-links">
+        <a href="../index.html">首页</a>
+        <a href="video.html">文生视频</a>
+        <a href="image.html">AI绘画</a>
+        <a href="canvas.html" class="active">智能画布</a>
+        <a href="community.html">社区</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="nav-btn">登录</button>
+      <div class="nav-avatar">U</div>
+    </div>
+  </nav>
+
+  <!-- Canvas Layout -->
+  <div class="canvas-layout">
+
+    <!-- Toolbar -->
+    <div class="canvas-toolbar">
+      <div class="tool-group">
+        <button class="tool-btn active" data-tool="select" onclick="selectTool('select')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
+          选择
+        </button>
+        <button class="tool-btn" data-tool="expand" onclick="selectTool('expand')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          扩图
+        </button>
+        <button class="tool-btn" data-tool="erase" onclick="selectTool('erase')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7.5c-.28 0-.54-.12-.72-.32l-5-6a.937.937 0 0 1 0-1.36l7-8c.18-.2.44-.32.72-.32H20"/><line x1="18" y1="8" x2="18" y2="20"/></svg>
+          消除笔
+        </button>
+        <button class="tool-btn" data-tool="repaint" onclick="selectTool('repaint')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          局部重绘
+        </button>
+        <button class="tool-btn" data-tool="text" onclick="selectTool('text')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9 2" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          文本
+        </button>
+      </div>
+      <div class="tool-group">
+        <span style="font-size:12px;color:var(--text-muted);">当前工具: <span id="currentToolLabel" style="color:var(--text-primary)">选择</span></span>
+      </div>
+    </div>
+
+    <!-- Main Area -->
+    <div class="canvas-main">
+
+      <!-- Layer Panel -->
+      <div class="layer-panel">
+        <div class="layer-panel-header">
+          <span class="layer-panel-title">图层</span>
+          <button class="add-layer-btn" onclick="addLayer()">+ 添加</button>
+        </div>
+        <div class="layer-item active" data-layer="0">
+          <div class="thumb">🎨</div>
+          <span class="name">背景图层</span>
+          <div class="actions">
+            <button onclick="toggleLayerVisibility(this)" title="显示/隐藏">👁</button>
+            <button onclick="this.closest('.layer-item').remove()" title="删除">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Center -->
+      <div class="canvas-center" id="canvasCenter">
+        <div class="canvas-stage" id="canvasStage">
+          <div class="canvas-empty-state" id="emptyState">
+            <div class="icon">🎨</div>
+            <p>拖拽图片到画布开始编辑</p>
+            <p class="sub">支持从AI绘画页面直接发送到此处</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Panel -->
+      <div class="property-panel" id="propertyPanel">
+        <div>
+          <div class="prop-title">工具属性</div>
+          <div class="prop-group">
+            <div class="prop-row">
+              <span class="label">画笔大小</span>
+              <span class="value" id="brushSizeVal">10</span>
+            </div>
+            <input type="range" min="1" max="100" value="10" oninput="document.getElementById('brushSizeVal').textContent=this.value">
+            <div class="prop-row">
+              <span class="label">透明度</span>
+              <span class="value" id="opacityVal">1.0</span>
+            </div>
+            <input type="range" min="0" max="1" step="0.05" value="1" oninput="document.getElementById('opacityVal').textContent=this.value">
+            <div class="prop-row">
+              <span class="label">颜色</span>
+              <span class="prop-color" onclick="showToast('选择颜色')"></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="prop-title">画布信息</div>
+          <div class="prop-group">
+            <div class="prop-row">
+              <span class="label">尺寸</span>
+              <span class="value">1024 × 768</span>
+            </div>
+            <div class="prop-row">
+              <span class="label">缩放</span>
+              <span class="value">100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Actions -->
+    <div class="canvas-actions">
+      <button class="canvas-action-btn" onclick="showToast('撤销')">↩ 撤销</button>
+      <button class="canvas-action-btn" onclick="showToast('重做')">↪ 重做</button>
+      <div style="flex:1"></div>
+      <button class="canvas-action-btn" onclick="showToast('导出中...')">⬇ 导出</button>
+      <button class="canvas-action-btn primary" onclick="showToast('已保存到社区')">🌐 保存到社区</button>
+    </div>
+
+    <!-- Feature Section -->
+    <div class="feature-section">
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-card-img" style="background:linear-gradient(135deg,#2a1a3e,#4a2a6e)">
+            <span class="label">🔲 扩图示例</span>
+          </div>
+          <div class="feature-card-body">
+            <h3>➡ 扩图</h3>
+            <p>超出画布边界扩展画面内容，AI自动补全缺失部分的纹理和构图，让画面更完整。</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-img" style="background:linear-gradient(135deg,#1a2a3e,#2a4a5e)">
+            <span class="label">🧹 消除笔示例</span>
+          </div>
+          <div class="feature-card-body">
+            <h3>🧽 消除笔</h3>
+            <p>涂抹不需要的元素（人物、文字、杂物），AI智能识别并消除，保留干净的画面背景。</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-img" style="background:linear-gradient(135deg,#2a1a1e,#5e2a3e)">
+            <span class="label">🎨 重绘示例</span>
+          </div>
+          <div class="feature-card-body">
+            <h3>✏ 局部重绘</h3>
+            <p>选中画面局部区域，输入新提示词重新生成该区域内容，不改动其他部分。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentTool = 'select';
+
+    function selectTool(tool) {
+      currentTool = tool;
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.tool-btn[data-tool="${tool}"]`).classList.add('active');
+      const labels = { select: '选择', expand: '扩图', erase: '消除笔', repaint: '局部重绘', text: '文本' };
+      document.getElementById('currentToolLabel').textContent = labels[tool] || tool;
+    }
+
+    // Layer visibility toggle
+    function toggleLayerVisibility(btn) {
+      btn.textContent = btn.textContent === '👁' ? '🚫' : '👁';
+    }
+
+    function addLayer() {
+      const panel = document.querySelector('.layer-panel');
+      const item = document.createElement('div');
+      item.className = 'layer-item';
+      item.innerHTML = `
+        <div class="thumb">🖼</div>
+        <span class="name">新图层 ${document.querySelectorAll('.layer-item').length}</span>
+        <div class="actions">
+          <button onclick="toggleLayerVisibility(this)" title="显示/隐藏">👁</button>
+          <button onclick="this.closest('.layer-item').remove()">✕</button>
+        </div>
+      `;
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.layer-item').forEach(l => l.classList.remove('active'));
+        item.classList.add('active');
+      });
+      panel.appendChild(item);
+      item.click();
+    }
+
+    // Canvas drop support
+    const stage = document.getElementById('canvasStage');
+    const emptyState = document.getElementById('emptyState');
+
+    stage.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      stage.classList.add('droppable');
+    });
+    stage.addEventListener('dragleave', () => {
+      stage.classList.remove('droppable');
+    });
+    stage.addEventListener('drop', (e) => {
+      e.preventDefault();
+      stage.classList.remove('droppable');
+      emptyState.style.display = 'none';
+      stage.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#2a1a3e,#1a2a2e);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;">图片已加载到画布</div>';
+      showToast('✅ 图片已载入画布');
+    });
+
+    // Toast
+    function showToast(msg) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      Object.assign(toast.style, {
+        position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+        padding: '12px 24px', borderRadius: '12px', background: 'rgba(26,26,46,0.95)',
+        color: '#f1f1f6', fontSize: '14px', backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255,255,255,0.06)', zIndex: '9999',
+        animation: 'fadeIn 0.3s ease-out', boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+      });
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 2500);
+    }
+
+    // Check if image was passed via URL param
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('image') === 'from-ai') {
+      emptyState.style.display = 'none';
+      stage.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#2a1a3e,#1a2a2e);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;">来自AI绘画的图片 ✨</div>';
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`;
+    document.head.appendChild(style);
+
+    // Export API stub
+    window.CanvasAPI = {
+      exportImage: () => console.log('Export canvas'),
+      saveToCommunity: () => console.log('Save to community'),
+      addImageLayer: (img) => {
+        emptyState.style.display = 'none';
+        stage.innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#2a1a3e,#1a2a2e);display:flex;align-items:center;justify-content:center;color:#888;font-size:14px;">图片图层已添加</div>';
+      }
+    };
+  </script>
+</body>
+</html>

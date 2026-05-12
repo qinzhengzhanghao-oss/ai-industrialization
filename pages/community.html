@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创意社区 - AI工业化</title>
+  <style>
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-card: #1a1a2e;
+      --bg-surface: rgba(26, 26, 46, 0.7);
+      --bg-glass: rgba(255, 255, 255, 0.04);
+      --text-primary: #f1f1f6;
+      --text-secondary: #8888a0;
+      --text-muted: #555570;
+      --brand-purple: #7C3AED;
+      --brand-green: #1DB954;
+      --brand-gradient: linear-gradient(135deg, #7C3AED, #1DB954);
+      --border-glass: rgba(255, 255, 255, 0.06);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    .nav-logo {
+      font-size: 20px;
+      font-weight: 700;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      cursor: pointer;
+    }
+    .nav-links { display: flex; gap: 24px; margin-left: 32px; }
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: var(--transition);
+      position: relative;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text-primary); }
+    .nav-links a.active::after {
+      content: '';
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 2px;
+      background: var(--brand-gradient);
+      border-radius: 1px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border-glass);
+      background: var(--bg-glass);
+      color: var(--text-primary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.1); }
+    .nav-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--brand-gradient);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* === Main Content === */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 32px 60px;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .filter-category {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-glass);
+      border-radius: var(--radius-md);
+      padding: 3px;
+    }
+    .filter-cat-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .filter-cat-btn:hover { color: var(--text-primary); }
+    .filter-cat-btn.active {
+      background: var(--brand-gradient);
+      color: #fff;
+      font-weight: 500;
+    }
+    .filter-sort {
+      display: flex;
+      gap: 4px;
+    }
+    .filter-sort-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .filter-sort-btn:hover { border-color: var(--brand-purple); color: var(--text-primary); }
+    .filter-sort-btn.active {
+      background: rgba(124,58,237,0.15);
+      border-color: var(--brand-purple);
+      color: #fff;
+    }
+
+    /* Gallery Grid (masonry-like) */
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .community-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: var(--transition);
+      cursor: pointer;
+      border: 1px solid var(--border-glass);
+      break-inside: avoid;
+    }
+    .community-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+      border-color: rgba(124,58,237,0.3);
+    }
+    .community-card:hover .card-overlay {
+      opacity: 1;
+    }
+
+    .card-image {
+      width: 100%;
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #2a1a3e, #1a2a2e);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Alternate aspect ratios for variety */
+    .community-card:nth-child(3n+2) .card-image { aspect-ratio: 3/4; }
+    .community-card:nth-child(5n+3) .card-image { aspect-ratio: 4/3; }
+
+    .card-image .placeholder-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+      padding: 8px;
+    }
+    .card-image .badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      color: var(--text-secondary);
+    }
+    .card-image .badge.video { color: var(--brand-green); }
+
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      transition: var(--transition);
+      backdrop-filter: blur(2px);
+    }
+    .card-overlay button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      background: var(--brand-gradient);
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .card-overlay button:hover { transform: scale(1.05); }
+
+    .card-body {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-username {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .card-stats span { display: flex; align-items: center; gap: 4px; }
+    .card-stats .liked { color: var(--brand-green); }
+
+    /* === Modal === */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 24px;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      max-width: 800px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      animation: modalSlideUp 0.3s ease-out;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border-glass);
+      background: rgba(0,0,0,0.5);
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      z-index: 1;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+    .modal-image {
+      width: 100%;
+      aspect-ratio: 16/10;
+      background: linear-gradient(135deg, #2a1a3e, #1a2a2e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-image .placeholder {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+    .modal-image .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+    .modal-body {
+      padding: 24px;
+    }
+    .modal-body h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .modal-body .prompt-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: var(--bg-glass);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--brand-purple);
+    }
+    .modal-author-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-glass);
+      border-bottom: 1px solid var(--border-glass);
+      margin-bottom: 16px;
+    }
+    .modal-author-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+      color: #fff;
+    }
+    .modal-author-detail .name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .modal-author-detail .bio {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .modal-action-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 10px 16px;
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .modal-action-btn:hover { border-color: var(--brand-purple); color: var(--text-primary); }
+    .modal-action-btn.primary { background: var(--brand-gradient); color: #fff; border: none; }
+    .modal-action-btn.liked { color: var(--brand-green); }
+
+    /* Animation */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalSlideUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 12px;
+      background: rgba(26,26,46,0.95);
+      color: #f1f1f6;
+      font-size: 14px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+      z-index: 9999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .community-grid { grid-template-columns: repeat(3, 1fr); }
+      .container { padding: 20px 20px 40px; }
+    }
+    @media (max-width: 768px) {
+      .navbar { padding: 0 16px; }
+      .nav-links { display: none; }
+      .community-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .container { padding: 16px 16px 32px; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-category, .filter-sort { width: 100%; justify-content: center; }
+      .modal-content { max-height: 95vh; }
+      .modal-body { padding: 16px; }
+    }
+    @media (max-width: 480px) {
+      .community-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="nav-logo" onclick="location.href='../index.html'">AI 工业化</span>
+      <div class="nav-links">
+        <a href="../index.html">首页</a>
+        <a href="video.html">文生视频</a>
+        <a href="image.html">AI绘画</a>
+        <a href="canvas.html">智能画布</a>
+        <a href="community.html" class="active">社区</a>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="nav-btn">登录</button>
+      <div class="nav-avatar">U</div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container">
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-category">
+        <button class="filter-cat-btn active" onclick="switchCategory('all', this)">全部</button>
+        <button class="filter-cat-btn" onclick="switchCategory('video', this)">视频</button>
+        <button class="filter-cat-btn" onclick="switchCategory('image', this)">图片</button>
+      </div>
+      <div class="filter-sort">
+        <button class="filter-sort-btn active" onclick="switchSort('latest', this)">🕐 最新</button>
+        <button class="filter-sort-btn" onclick="switchSort('hot', this)">🔥 最热</button>
+        <button class="filter-sort-btn" onclick="switchSort('recommend', this)">⭐ 推荐</button>
+      </div>
+    </div>
+
+    <!-- Community Grid -->
+    <div class="community-grid" id="communityGrid">
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-image" id="modalImage">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <h2 id="modalTitle">作品标题</h2>
+        <div class="prompt-text" id="modalPrompt">提示词信息...</div>
+        <div class="modal-author-info">
+          <div class="modal-author-avatar" id="modalAvatar">U</div>
+          <div class="modal-author-detail">
+            <div class="name" id="modalAuthorName">用户名</div>
+            <div class="bio" id="modalAuthorBio">个人简介</div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-action-btn" id="modalLikeBtn" onclick="toggleModalLike()">❤ 点赞 <span id="modalLikeCount">0</span></button>
+          <button class="modal-action-btn" onclick="showToast('已复制分享链接')">🔗 分享</button>
+          <button class="modal-action-btn" onclick="showToast('下载中...')">⬇ 下载</button>
+          <button class="modal-action-btn primary" onclick="showToast('已保存')">💾 收藏</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === Sample Data ===
+    const works = [
+      { id: 0, type: 'image', user: '星辰画师', avatarBg: '#7C3AED', title: '赛博朋克都市', prompt: '赛博朋克风格未来都市夜景，霓虹灯光，雨夜街道，机械细节，4k画质', likes: 342, comments: 28, liked: false },
+      { id: 1, type: 'video', user: 'AI艺术家', avatarBg: '#1DB954', title: '水墨动画短片', prompt: '水墨风格动画，山水之间，飞鸟掠过湖面，意境深远', likes: 567, comments: 43, liked: false },
+      { id: 2, type: 'image', user: '设计灵感', avatarBg: '#E94E77', title: '极简几何美学', prompt: '极简风格几何抽象，白色背景，金色线条，现代艺术', likes: 189, comments: 12, liked: false },
+      { id: 3, type: 'image', user: '幻想世界', avatarBg: '#FF6B35', title: '龙与魔法森林', prompt: '奇幻风格，森林中的巨龙，魔法光芒，高细节奇幻插画', likes: 724, comments: 56, liked: true },
+      { id: 4, type: 'video', user: '时光旅人', avatarBg: '#4ECDC4', title: '未来城市漫游', prompt: '第一人称视角未来城市漫游，飞行汽车，巨型全息广告', likes: 1890, comments: 134, liked: true },
+      { id: 5, type: 'image', user: '梦幻调色师', avatarBg: '#A855F7', title: '霓虹夜樱', prompt: '樱花树下的霓虹街道，日式风格，粉色与蓝色灯光交织', likes: 445, comments: 37, liked: false },
+      { id: 6, type: 'image', user: '创意实验室', avatarBg: '#F43F5E', title: '超现实主义空间', prompt: '超现实室内空间，无尽书架，悬浮书本，梦幻光影', likes: 298, comments: 21, liked: false },
+      { id: 7, type: 'video', user: 'AI魔法师', avatarBg: '#06B6D4', title: '星云绽放', prompt: '动态星云绽放动画，宇宙深空，绚丽色彩，粒子效果', likes: 890, comments: 72, liked: true },
+      { id: 8, type: 'image', user: '视觉叙事', avatarBg: '#84CC16', title: '末日后花园', prompt: '末日废墟中的花园，野花覆盖生锈的金属，希望与毁灭对比', likes: 234, comments: 19, liked: false },
+      { id: 9, type: 'image', user: '光影猎人', avatarBg: '#D946EF', title: '玻璃与黄昏', prompt: '黄昏时分玻璃建筑的光影交错，暖色调，反射与折射', likes: 567, comments: 41, liked: false },
+      { id: 10, type: 'video', user: '数字诗人', avatarBg: '#14B8A6', title: '海浪循环', prompt: '循环动画，风格化海浪，水彩质感，治愈系节奏', likes: 1234, comments: 98, liked: true },
+      { id: 11, type: 'image', user: '元宇宙建造者', avatarBg: '#8B5CF6', title: '数字炼金术', prompt: '数字风格炼金术符号，黄金与紫水晶材质，科技神秘风', likes: 156, comments: 9, liked: false },
+    ];
+
+    let currentWorks = [...works];
+    let selectedWork = null;
+    let modalLiked = false;
+
+    // Init gallery
+    function renderWorks(list) {
+      const grid = document.getElementById('communityGrid');
+      grid.innerHTML = list.map(w => {
+        const gradients = [
+          'linear-gradient(135deg,#2a1a3e,#4a2a6e)',
+          'linear-gradient(135deg,#1a2a3e,#2a4a5e)',
+          'linear-gradient(135deg,#2a1a1e,#5e2a3e)',
+          'linear-gradient(135deg,#1a3a2e,#2a5a4e)',
+          'linear-gradient(135deg,#3a1a2e,#5e3a4e)',
+          'linear-gradient(135deg,#2a2a1e,#4a4a2e)',
+        ];
+        const bg = gradients[w.id % gradients.length];
+        const badge = w.type === 'video' ? `<span class="badge video">▶ 视频</span>` : `<span class="badge">🖼 图片</span>`;
+        return `
+          <div class="community-card" onclick="openModal(${w.id})">
+            <div class="card-image" style="background:${bg}">
+              ${badge}
+              <div class="placeholder-text">${w.title}</div>
+              <div class="card-overlay">
+                <button>🔍 查看</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="card-avatar" style="background:${w.avatarBg}">${w.user[0]}</div>
+              <div class="card-info">
+                <div class="card-username">${w.user}</div>
+                <div class="card-stats">
+                  <span class="${w.liked ? 'liked' : ''}">❤ ${w.liked ? w.likes + 1 : w.likes}</span>
+                  <span>💬 ${w.comments}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Filter & Sort
+    function switchCategory(cat, btn) {
+      document.querySelectorAll('.filter-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentWorks = cat === 'all' ? [...works] : works.filter(w => w.type === cat);
+      renderWorks(currentWorks);
+    }
+
+    function switchSort(sort, btn) {
+      document.querySelectorAll('.filter-sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const sorted = [...currentWorks];
+      if (sort === 'latest') sorted.sort((a, b) => b.id - a.id);
+      else if (sort === 'hot') sorted.sort((a, b) => b.likes - a.likes);
+      else if (sort === 'recommend') sorted.sort((a, b) => (b.liked ? 1 : 0) - (a.liked ? 1 : 0));
+      renderWorks(sorted);
+    }
+
+    // Modal
+    function openModal(id) {
+      selectedWork = works.find(w => w.id === id);
+      if (!selectedWork) return;
+      modalLiked = selectedWork.liked;
+
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.add('open');
+
+      const gradients = [
+        'linear-gradient(135deg,#2a1a3e,#4a2a6e)',
+        'linear-gradient(135deg,#1a2a3e,#2a4a5e)',
+        'linear-gradient(135deg,#2a1a1e,#5e2a3e)',
+        'linear-gradient(135deg,#1a3a2e,#2a5a4e)',
+        'linear-gradient(135deg,#3a1a2e,#5e3a4e)',
+        'linear-gradient(135deg,#2a2a1e,#4a4a2e)',
+      ];
+      const bg = gradients[id % gradients.length];
+
+      const modalImg = document.getElementById('modalImage');
+      modalImg.innerHTML = `
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <span class="placeholder">${selectedWork.title}</span>
+      `;
+      modalImg.style.background = bg;
+
+      document.getElementById('modalTitle').textContent = selectedWork.title;
+      document.getElementById('modalPrompt').textContent = selectedWork.prompt;
+      document.getElementById('modalAvatar').style.background = selectedWork.avatarBg;
+      document.getElementById('modalAvatar').textContent = selectedWork.user[0];
+      document.getElementById('modalAuthorName').textContent = selectedWork.user;
+      document.getElementById('modalAuthorBio').textContent = `AI 创作者 · ${selectedWork.type === 'video' ? '视频' : '图片'}作品`;
+
+      updateModalLikeBtn();
+      document.getElementById('modalLikeCount').textContent = selectedWork.likes;
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(e) {
+      if (e && e.target !== document.getElementById('modalOverlay')) return;
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function toggleModalLike() {
+      modalLiked = !modalLiked;
+      if (selectedWork) {
+        selectedWork.liked = modalLiked;
+        selectedWork.likes += modalLiked ? 1 : -1;
+      }
+      updateModalLikeBtn();
+      document.getElementById('modalLikeCount').textContent = selectedWork ? selectedWork.likes : 0;
+      renderWorks(currentWorks);
+    }
+
+    function updateModalLikeBtn() {
+      const btn = document.getElementById('modalLikeBtn');
+      btn.className = `modal-action-btn${modalLiked ? ' liked' : ''}`;
+      btn.innerHTML = modalLiked ? '❤️ 已点赞' : '❤ 点赞';
+    }
+
+    // Keyboard close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Toast
+    function showToast(msg) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 2500);
+    }
+
+    // Init
+    renderWorks(currentWorks);
+
+    // Export API stub
+    window.CommunityAPI = {
+      fetchWorks: () => console.log('Fetch community works'),
+      likeWork: (id) => console.log('Like work', id),
+      shareWork: (id) => console.log('Share work', id),
+    };
+  </script>
+</body>
+</html>

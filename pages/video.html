@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 视频生成工作台 - AI 工业化</title>
+  <meta name="description" content="AI 视频生成工作台，支持文生视频、图生视频、首尾帧控制，基于 Seedance 2.0 API">
+  <link rel="stylesheet" href="../css/style-video.css">
+</head>
+<body>
+  <!-- 动态背景 -->
+  <div class="page-bg">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+  </div>
+
+  <!-- 导航栏 -->
+  <nav class="glass-nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-brand">
+        <span class="logo-icon">AI</span>
+        <span><span class="brand-highlight">AI</span> 工业化</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">首页</a>
+        <a href="video.html" class="active">视频工作台</a>
+        <a href="image.html">AI绘画</a>
+        <a href="canvas.html">智能画布</a>
+        <a href="community.html">社区</a>
+      </div>
+      <button class="nav-toggle" aria-label="切换菜单">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 主内容 -->
+  <div class="page-wrapper">
+    <div class="page-header">
+      <h1>🎬 AI 视频生成工作台</h1>
+      <p>基于 Seedance 2.0 API，支持文生视频、图生视频、首尾帧控制</p>
+    </div>
+
+    <!-- 工作台 -->
+    <div class="workbench">
+
+      <!-- ======== 左侧面板：模式选择 & 参数配置 ======== -->
+      <aside class="left-panel glass">
+
+        <!-- 模式切换 Tabs -->
+        <div class="mode-tabs" role="tablist" aria-label="生成模式">
+          <button class="mode-tab active" data-mode="text" role="tab" aria-selected="true">
+            <span class="tab-icon">✏️</span>
+            <span>文生视频</span>
+          </button>
+          <button class="mode-tab" data-mode="image" role="tab" aria-selected="false">
+            <span class="tab-icon">🖼️</span>
+            <span>图生视频</span>
+          </button>
+          <button class="mode-tab" data-mode="frame" role="tab" aria-selected="false">
+            <span class="tab-icon">🎞️</span>
+            <span>首尾帧控制</span>
+          </button>
+        </div>
+
+        <!-- 分辨率 -->
+        <div class="panel-section">
+          <div class="panel-section-title">分辨率</div>
+          <div class="option-grid" data-option="resolution">
+            <button class="option-btn" data-value="720p">720p</button>
+            <button class="option-btn active" data-value="1080p">1080p</button>
+            <button class="option-btn" data-value="2k">2K</button>
+          </div>
+        </div>
+
+        <!-- 时长 -->
+        <div class="panel-section">
+          <div class="panel-section-title">时长</div>
+          <div class="option-grid" data-option="duration">
+            <button class="option-btn active" data-value="5">5 秒</button>
+            <button class="option-btn" data-value="10">10 秒</button>
+          </div>
+        </div>
+
+        <!-- 运镜风格 -->
+        <div class="panel-section">
+          <div class="panel-section-title">运镜风格</div>
+          <div class="option-grid style-grid" data-option="camera_style">
+            <button class="option-btn active" data-value="fixed">固定</button>
+            <button class="option-btn" data-value="push">推近</button>
+            <button class="option-btn" data-value="pull">拉远</button>
+            <button class="option-btn" data-value="left">左移</button>
+            <button class="option-btn" data-value="right">右移</button>
+            <button class="option-btn" data-value="rotate">旋转</button>
+          </div>
+        </div>
+
+        <!-- 运动速度 -->
+        <div class="panel-section">
+          <div class="panel-section-title">运动速度</div>
+          <div class="speed-slider" data-option="speed">
+            <span style="font-size:12px;color:var(--text-muted);width:40px;">慢</span>
+            <input type="range" min="0" max="2" value="1" step="1"
+                   style="-webkit-appearance:none;appearance:none;flex:1;height:4px;background:var(--bg-input);border-radius:2px;outline:none;cursor:pointer;">
+            <span style="font-size:12px;color:var(--text-muted);width:40px;text-align:right;">快</span>
+          </div>
+        </div>
+
+        <!-- 生成音频 -->
+        <div class="panel-section">
+          <div class="toggle-row">
+            <span class="toggle-label">生成音频</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked id="toggle-audio">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 负面提示词 -->
+        <div class="panel-section">
+          <div class="panel-section-title">负面提示词（可选）</div>
+          <textarea class="negative-input" id="negative-prompt" placeholder="描述你不希望出现的内容，如：模糊、变形、扭曲..." aria-label="负面提示词"></textarea>
+        </div>
+
+      </aside>
+
+      <!-- ======== 中间面板：主要工作区 ======== -->
+      <main class="center-panel">
+
+        <!-- 工作区 -->
+        <div class="work-area glass">
+
+          <!-- 文生视频模式 -->
+          <div class="mode-content active" id="mode-text">
+            <textarea class="prompt-textarea" id="prompt-text" 
+                      placeholder="描述你想要生成的视频画面...&#10;&#10;例如：雨夜，霓虹灯照亮的东京街头，一个撑着透明雨伞的女孩走过斑马线，慢动作，电影质感，4K超高清"
+                      rows="8" aria-label="视频描述"></textarea>
+          </div>
+
+          <!-- 图生视频模式 -->
+          <div class="mode-content" id="mode-image">
+            <div class="upload-area" id="image-upload-area">
+              <div class="upload-icon">🖼️</div>
+              <div class="upload-text">拖拽图片到此处或点击上传</div>
+              <div class="upload-hint">支持 JPG / PNG / WebP</div>
+              <img class="preview-image" id="image-preview" alt="上传的图片预览">
+              <input type="file" accept="image/jpeg,image/png,image/webp" id="image-input" aria-label="上传图片">
+            </div>
+            <div class="prompt-below-input">
+              <textarea class="prompt-textarea" id="prompt-image" 
+                        placeholder="（可选）描述画面动态效果...&#10;&#10;例如：微风吹动湖面，阳光在水面上闪烁"
+                        rows="5" aria-label="图片视频提示词"></textarea>
+            </div>
+          </div>
+
+          <!-- 首尾帧控制模式 -->
+          <div class="mode-content" id="mode-frame">
+            <div class="frame-upload-grid">
+              <div class="frame-upload-box">
+                <span class="upload-label">首帧图片</span>
+                <div class="upload-area" id="first-frame-area">
+                  <div class="upload-icon">🎬</div>
+                  <div class="upload-text">上传首帧</div>
+                  <div class="upload-hint">拖拽或点击</div>
+                  <img class="preview-image" id="first-frame-preview" alt="首帧预览">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" id="first-frame-input" aria-label="上传首帧">
+                </div>
+              </div>
+              <div class="frame-upload-box">
+                <span class="upload-label">尾帧图片</span>
+                <div class="upload-area" id="last-frame-area">
+                  <div class="upload-icon">🎬</div>
+                  <div class="upload-text">上传尾帧</div>
+                  <div class="upload-hint">拖拽或点击</div>
+                  <img class="preview-image" id="last-frame-preview" alt="尾帧预览">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" id="last-frame-input" aria-label="上传尾帧">
+                </div>
+              </div>
+            </div>
+            <div class="prompt-below-input">
+              <textarea class="prompt-textarea" id="prompt-frame" 
+                        placeholder="描述首尾帧之间的过渡效果...&#10;&#10;例如：花朵从含苞待放到完全盛开，柔和的自然光线变化"
+                        rows="4" aria-label="首尾帧提示词"></textarea>
+            </div>
+          </div>
+
+          <!-- 生成按钮 -->
+          <button class="generate-btn" id="generate-btn" disabled>
+            <span class="btn-icon">⚡</span>
+            <span>立即生成</span>
+          </button>
+        </div>
+
+        <!-- 历史记录区域 -->
+        <div class="history-section">
+          <div class="history-header">
+            <h3>📁 生成历史</h3>
+            <span style="font-size:12px;color:var(--text-muted);">最近生成</span>
+          </div>
+          <div class="history-scroll" id="history-scroll">
+            <div class="history-empty" id="history-empty">
+              暂无生成记录，开始你的第一次 AI 视频创作吧
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- ======== 右侧面板：预览区 ======== -->
+      <aside class="right-panel glass">
+
+        <div class="preview-section-title">
+          <span>🎥 预览</span>
+          <span id="mode-label" style="font-size:12px;color:var(--text-muted);">文生视频</span>
+        </div>
+
+        <!-- 预览容器 -->
+        <div class="preview-container" id="preview-container">
+          <div class="preview-placeholder" id="preview-placeholder">
+            <div class="placeholder-icon">🎬</div>
+            <div class="placeholder-text">
+              <span id="status-text">等待输入</span>
+            </div>
+          </div>
+          <video id="preview-video" style="display:none;width:100%;height:100%;object-fit:contain;" 
+                 controls autoplay loop></video>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+          <span class="status-dot waiting" id="status-dot"></span>
+          <span id="status-msg">等待开始</span>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="preview-actions">
+          <button class="action-btn primary" id="download-btn" disabled>
+            ⬇ 下载视频
+          </button>
+          <button class="action-btn secondary" id="regenerate-btn" disabled>
+            🔄 重新生成
+          </button>
+        </div>
+
+        <!-- API Key 设置 -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-card);">
+          <div class="panel-section-title" style="margin-bottom:6px;">API Key</div>
+          <div style="display:flex;gap:6px;">
+            <input type="password" class="negative-input" id="api-key-input" 
+                   placeholder="输入 Seedance API Key" 
+                   style="min-height:36px;font-size:12px;flex:1;">
+            <button id="api-key-save" style="
+              padding:8px 12px;
+              background:var(--gradient-main);
+              border:none;
+              border-radius:var(--radius-sm);
+              color:white;
+              font-size:12px;
+              font-weight:600;
+              cursor:pointer;
+              white-space:nowrap;
+              transition:var(--transition);
+            ">保存</button>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    // ============================================
+    // DOM 引用
+    // ============================================
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    const modeContents = {
+      text: document.getElementById('mode-text'),
+      image: document.getElementById('mode-image'),
+      frame: document.getElementById('mode-frame')
+    };
+    const optionGroups = document.querySelectorAll('.option-grid');
+    const speedSlider = document.querySelector('.speed-slider input[type="range"]');
+    const audioToggle = document.getElementById('toggle-audio');
+    const negativePrompt = document.getElementById('negative-prompt');
+    const generateBtn = document.getElementById('generate-btn');
+    const modeLabel = document.getElementById('mode-label');
+
+    // Preview elements
+    const previewContainer = document.getElementById('preview-container');
+    const previewPlaceholder = document.getElementById('preview-placeholder');
+    const previewVideo = document.getElementById('preview-video');
+    const statusDot = document.getElementById('status-dot');
+    const statusMsg = document.getElementById('status-msg');
+    const statusText = document.getElementById('status-text');
+    const downloadBtn = document.getElementById('download-btn');
+    const regenerateBtn = document.getElementById('regenerate-btn');
+
+    // API Key
+    const apiKeyInput = document.getElementById('api-key-input');
+    const apiKeySave = document.getElementById('api-key-save');
+
+    // History
+    const historyScroll = document.getElementById('history-scroll');
+    const historyEmpty = document.getElementById('history-empty');
+
+    // Inputs
+    const promptText = document.getElementById('prompt-text');
+
+    // Image upload elements
+    const imageUploadArea = document.getElementById('image-upload-area');
+    const imageInput = document.getElementById('image-input');
+    const imagePreview = document.getElementById('image-preview');
+    const promptImage = document.getElementById('prompt-image');
+
+    // Frame upload elements
+    const firstFrameArea = document.getElementById('first-frame-area');
+    const firstFrameInput = document.getElementById('first-frame-input');
+    const firstFramePreview = document.getElementById('first-frame-preview');
+    const lastFrameArea = document.getElementById('last-frame-area');
+    const lastFrameInput = document.getElementById('last-frame-input');
+    const lastFramePreview = document.getElementById('last-frame-preview');
+    const promptFrame = document.getElementById('prompt-frame');
+
+    // ============================================
+    // State
+    // ============================================
+    let currentMode = 'text';
+    let currentOptions = {
+      resolution: '1080p',
+      duration: 5,
+      camera_style: 'fixed',
+      speed: 'medium',
+      audio: true
+    };
+    let isGenerating = false;
+    let generatedVideoUrl = '';
+    let history = JSON.parse(localStorage.getItem('ai_video_history') || '[]');
+    let uploadedImages = {};
+
+    // ============================================
+    // 初始化 - 加载保存的 API Key 和历史
+    // ============================================
+    function init() {
+      // 加载 API Key
+      const savedKey = AI_API.getApiKey();
+      if (savedKey) {
+        apiKeyInput.value = savedKey;
+        generateBtn.disabled = false;
+      }
+
+      // 加载历史记录
+      renderHistory();
+
+      // 事件绑定
+      bindModeTabs();
+      bindOptions();
+      bindGenerate();
+      bindApiKey();
+      bindUploads();
+      bindPreview();
+      checkGenerateEnabled();
+
+      // 监听输入变化
+      document.querySelectorAll('.prompt-textarea').forEach(function(el) {
+        el.addEventListener('input', checkGenerateEnabled);
+      });
+    }
+
+    // ============================================
+    // 模式切换
+    // ============================================
+    function bindModeTabs() {
+      modeTabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          const mode = tab.dataset.mode;
+          if (mode === currentMode) return;
+          if (isGenerating) {
+            App.showNotification('请等待当前任务完成后切换', 'warning');
+            return;
+          }
+
+          // 更新 Tab 状态
+          modeTabs.forEach(function(t) {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          tab.classList.add('active');
+          tab.setAttribute('aria-selected', 'true');
+
+          // 更新内容
+          Object.keys(modeContents).forEach(function(key) {
+            if (modeContents[key]) {
+              modeContents[key].classList.remove('active');
+            }
+          });
+          if (modeContents[mode]) {
+            modeContents[mode].classList.add('active');
+          }
+
+          currentMode = mode;
+
+          // 更新标签
+          const labels = { text: '文生视频', image: '图生视频', frame: '首尾帧控制' };
+          modeLabel.textContent = labels[mode] || mode;
+
+          checkGenerateEnabled();
+        });
+      });
+    }
+
+    // ============================================
+    // 选项切换
+    // ============================================
+    function bindOptions() {
+      // 选项网格按钮
+      optionGroups.forEach(function(group) {
+        var buttons = group.querySelectorAll('.option-btn');
+        buttons.forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+
+            const optionName = group.dataset.option;
+            const value = btn.dataset.value;
+
+            if (optionName === 'resolution') {
+              currentOptions.resolution = value;
+            } else if (optionName === 'duration') {
+              currentOptions.duration = parseInt(value);
+            } else if (optionName === 'camera_style') {
+              currentOptions.camera_style = value;
+            }
+          });
+        });
+      });
+
+      // 运动速度
+      if (speedSlider) {
+        speedSlider.addEventListener('input', function() {
+          const val = parseInt(speedSlider.value);
+          if (val <= 0) currentOptions.speed = 'slow';
+          else if (val >= 2) currentOptions.speed = 'fast';
+          else currentOptions.speed = 'medium';
+        });
+      }
+      
+      // 滑块 UI 适配（兼容 fill 样式的）
+      if (speedSlider) {
+        updateSliderFill(speedSlider);
+        speedSlider.addEventListener('input', function() {
+          updateSliderFill(speedSlider);
+        });
+      }
+
+      // 音频开关
+      if (audioToggle) {
+        audioToggle.addEventListener('change', function() {
+          currentOptions.audio = audioToggle.checked;
+        });
+      }
+    }
+
+    function updateSliderFill(slider) {
+      var fill = slider.closest('.speed-slider')?.querySelector('.slider-fill');
+      if (!fill) return;
+      var min = parseFloat(slider.min) || 0;
+      var max = parseFloat(slider.max) || 100;
+      var val = parseFloat(slider.value) || 0;
+      var pct = ((val - min) / (max - min)) * 100;
+      fill.style.width = pct + '%';
+    }
+
+    // ============================================
+    // 上传区域
+    // ============================================
+    function bindUploads() {
+      setupUploadArea(imageUploadArea, imageInput, imagePreview, 'image');
+      setupUploadArea(firstFrameArea, firstFrameInput, firstFramePreview, 'firstFrame');
+      setupUploadArea(lastFrameArea, lastFrameInput, lastFramePreview, 'lastFrame');
+    }
+
+    function setupUploadArea(area, input, preview, key) {
+      if (!area || !input || !preview) return;
+
+      // 点击上传
+      input.addEventListener('change', function(e) {
+        handleFile(e.target.files[0], area, preview, key);
+      });
+
+      // 拖拽上传
+      ['dragenter', 'dragover'].forEach(function(evt) {
+        area.addEventListener(evt, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          area.classList.add('drag-over');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(function(evt) {
+        area.addEventListener(evt, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          area.classList.remove('drag-over');
+          if (evt === 'drop' && e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0], area, preview, key);
+          }
+        });
+      });
+    }
+
+    function handleFile(file, area, preview, key) {
+      if (!file || !file.type.startsWith('image/')) {
+        App.showNotification('请上传图片文件', 'error');
+        return;
+      }
+
+      if (file.size > 20 * 1024 * 1024) {
+        App.showNotification('图片大小不能超过 20MB', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        area.classList.add('has-image');
+        uploadedImages[key] = file;
+        checkGenerateEnabled();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ============================================
+    // 生成按钮
+    // ============================================
+    function checkGenerateEnabled() {
+      if (isGenerating) {
+        generateBtn.disabled = true;
+        return;
+      }
+
+      const apiKey = AI_API.getApiKey();
+      if (!apiKey) {
+        generateBtn.disabled = true;
+        return;
+      }
+
+      if (currentMode === 'text') {
+        generateBtn.disabled = !promptText.value.trim();
+      } else if (currentMode === 'image') {
+        generateBtn.disabled = !uploadedImages.image;
+      } else if (currentMode === 'frame') {
+        generateBtn.disabled = !uploadedImages.firstFrame;
+      }
+    }
+
+    // ============================================
+    // 生成逻辑
+    // ============================================
+    function bindGenerate() {
+      generateBtn.addEventListener('click', startGeneration);
+    }
+
+    async function startGeneration() {
+      if (isGenerating) return;
+
+      // 检查 API Key
+      const apiKey = AI_API.getApiKey();
+      if (!apiKey) {
+        App.showNotification('请先在右侧面板设置 API Key', 'warning');
+        return;
+      }
+
+      // 收集参数
+      const options = {
+        resolution: currentOptions.resolution,
+        duration: currentOptions.duration,
+        cameraStyle: currentOptions.camera_style,
+        speed: currentOptions.speed,
+        audio: currentOptions.audio,
+        negativePrompt: negativePrompt.value.trim()
+      };
+
+      // 获取提示词
+      let prompt = '';
+      let taskPromise = null;
+
+      try {
+        if (currentMode === 'text') {
+          prompt = promptText.value.trim();
+          if (!prompt) {
+            App.showNotification('请输入视频描述', 'warning');
+            return;
+          }
+          taskPromise = AI_API.textToVideo(prompt, options);
+        } else if (currentMode === 'image') {
+          if (!uploadedImages.image) {
+            App.showNotification('请上传图片', 'warning');
+            return;
+          }
+          prompt = promptImage.value.trim();
+          taskPromise = AI_API.imageToVideo(uploadedImages.image, prompt, options);
+        } else if (currentMode === 'frame') {
+          if (!uploadedImages.firstFrame) {
+            App.showNotification('请上传首帧图片', 'warning');
+            return;
+          }
+          prompt = promptFrame.value.trim();
+          taskPromise = AI_API.frameToFrame(uploadedImages.firstFrame, uploadedImages.lastFrame || null, prompt, options);
+        }
+
+        // 开始生成状态
+        isGenerating = true;
+        generateBtn.disabled = true;
+        generateBtn.querySelector('.btn-icon').textContent = '⏳';
+        generateBtn.querySelector(':scope > span:last-child').textContent = '生成中...';
+        
+        updateStatus('processing', '正在提交任务...');
+        updatePreviewStatus('处理中...');
+
+        // 提交任务
+        const taskResult = await taskPromise;
+
+        updateStatus('processing', 'AI 正在生成视频（约1-3分钟）');
+        updatePreviewStatus('生成中...');
+        previewContainer.classList.add('generating');
+
+        // 模拟演示流程（同时也尝试真实轮询）
+        const useSimulation = !apiKey || apiKey.length < 10;
+        
+        if (useSimulation) {
+          // 演示模式
+          await simulateGeneration();
+        } else {
+          // 真实轮询
+          let lastStatus = '';
+          await AI_API.pollTask(taskResult.taskId, function(status) {
+            lastStatus = status;
+            if (status === 'processing' || status === 'queued') {
+              updateStatus('processing', 'AI 正在生成视频，请稍候...');
+            }
+          });
+
+          updateStatus('completed', '视频生成完成！');
+        }
+
+        // 生成完成（演示模式）
+        if (useSimulation) {
+          generatedVideoUrl = 'https://example.com/generated-video-' + Date.now() + '.mp4';
+        }
+
+      } catch (error) {
+        console.error('Generation failed:', error);
+        updateStatus('waiting', '生成失败: ' + (error.message || '请重试'));
+        updatePreviewStatus('❌ 生成失败');
+        App.showNotification('生成失败: ' + (error.message || '请重试'), 'error');
+        finishGeneration();
+        return;
+      }
+
+      // 显示视频（演示模式下没有真实视频，展示生成成功状态）
+      if (generatedVideoUrl) {
+        // 尝试设置真实视频 URL 
+        previewVideo.style.display = 'block';
+        previewPlaceholder.style.display = 'none';
+        previewVideo.src = generatedVideoUrl;
+      } else {
+        // 演示完成状态
+        previewPlaceholder.querySelector('.placeholder-icon').textContent = '✅';
+        updatePreviewStatus('✅ 视频生成完成');
+      }
+
+      previewContainer.classList.remove('generating');
+      downloadBtn.disabled = false;
+      regenerateBtn.disabled = false;
+
+      // 添加到历史
+      addToHistory({
+        mode: currentMode,
+        prompt: prompt.substring(0, 50),
+        options: options,
+        timestamp: Date.now()
+      });
+
+      App.showNotification('视频生成成功！', 'success');
+      finishGeneration();
+    }
+
+    async function simulateGeneration() {
+      // 模拟进度
+      updateStatus('processing', 'AI 正在分析提示词...');
+      await App.sleep(1500);
+
+      updateStatus('processing', '正在生成关键帧...');
+      await App.sleep(2000);
+
+      updateStatus('processing', '正在渲染视频...');
+      await App.sleep(2000);
+
+      updateStatus('processing', '正在进行后期处理...');
+      await App.sleep(1500);
+
+      updateStatus('completed', '视频生成完成！');
+      updatePreviewStatus('✅ 视频生成完成！请查看结果');
+    }
+
+    function updateStatus(type, msg) {
+      statusDot.className = 'status-dot ' + type;
+      statusMsg.textContent = msg || '';
+    }
+
+    function updatePreviewStatus(text) {
+      statusText.textContent = text;
+    }
+
+    function finishGeneration() {
+      isGenerating = false;
+      generateBtn.disabled = false;
+      generateBtn.querySelector('.btn-icon').textContent = '⚡';
+      generateBtn.querySelector(':scope > span:last-child').textContent = '立即生成';
+      checkGenerateEnabled();
+    }
+
+    // ============================================
+    // 预览操作
+    // ============================================
+    function bindPreview() {
+      // 下载
+      downloadBtn.addEventListener('click', function() {
+        if (generatedVideoUrl) {
+          AI_API.downloadVideo(generatedVideoUrl, 'ai-video-' + Date.now() + '.mp4');
+        } else {
+          App.showNotification('暂无视频可下载', 'warning');
+        }
+      });
+
+      // 重新生成
+      regenerateBtn.addEventListener('click', function() {
+        // 重置预览
+        previewVideo.style.display = 'none';
+        previewVideo.removeAttribute('src');
+        previewPlaceholder.style.display = 'block';
+        previewPlaceholder.querySelector('.placeholder-icon').textContent = '🎬';
+        updatePreviewStatus('点击"立即生成"重新创作');
+        updateStatus('waiting', '准备就绪');
+        downloadBtn.disabled = true;
+        regenerateBtn.disabled = true;
+        generatedVideoUrl = '';
+        startGeneration();
+      });
+    }
+
+    // ============================================
+    // API Key 管理
+    // ============================================
+    function bindApiKey() {
+      apiKeySave.addEventListener('click', function() {
+        const key = apiKeyInput.value.trim();
+        if (!key) {
+          App.showNotification('请输入 API Key', 'warning');
+          return;
+        }
+        AI_API.setApiKey(key);
+        generateBtn.disabled = false;
+        App.showNotification('API Key 已保存', 'success');
+        checkGenerateEnabled();
+      });
+
+      apiKeyInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          apiKeySave.click();
+        }
+      });
+    }
+
+    // ============================================
+    // 历史记录
+    // ============================================
+    function addToHistory(record) {
+      history.unshift(record);
+      if (history.length > 50) {
+        history = history.slice(0, 50);
+      }
+      localStorage.setItem('ai_video_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!historyScroll || !historyEmpty) return;
+
+      // 清空（保留 empty 占位）
+      var items = historyScroll.querySelectorAll('.history-item');
+      items.forEach(function(el) { el.remove(); });
+
+      if (history.length === 0) {
+        historyEmpty.style.display = 'flex';
+        return;
+      }
+
+      historyEmpty.style.display = 'none';
+
+      history.forEach(function(record) {
+        var item = document.createElement('div');
+        item.className = 'history-item';
+
+        var modeIcons = { text: '✏️', image: '🖼️', frame: '🎞️' };
+        var modeLabels = { text: '文生', image: '图生', frame: '首尾帧' };
+
+        item.innerHTML = 
+          '<div class="history-thumb">' + (modeIcons[record.mode] || '🎬') + '</div>' +
+          '<div class="history-meta">' + 
+            (modeLabels[record.mode] || record.mode) + ' · ' +
+            App.formatDate(record.timestamp, 'HH:mm') +
+          '</div>';
+
+        item.title = record.prompt || '';
+
+        item.addEventListener('click', function() {
+          App.showNotification('历史记录查看功能开发中', 'info');
+        });
+
+        historyScroll.appendChild(item);
+      });
+    }
+
+    // ============================================
+    // 启动
+    // ============================================
+    document.addEventListener('DOMContentLoaded', init);
+
+  })();
+  </script>
+
+</body>
+</html>

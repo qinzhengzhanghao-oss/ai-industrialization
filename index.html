@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI工业化 - 即刻造梦 | 视频生成·AI绘画·智能画布</title>
+  <meta name="description" content="AI工业化 —— 基于先进AI技术的创作平台，支持文生视频、图生视频、AI绘画、智能画布。即刻开始，让创意成为现实。">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Background Particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- ==================== Navigation ==================== -->
+  <nav class="nav" id="nav">
+    <div class="container">
+      <div class="nav-logo">
+        <span class="logo-icon">◈</span>
+        <span class="logo-text">AI工业化</span>
+      </div>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="pages/video.html">视频生成</a></li>
+        <li><a href="pages/image.html">AI绘画</a></li>
+        <li><a href="pages/canvas.html">智能画布</a></li>
+        <li><a href="pages/community.html">社区</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="nav-btn" aria-label="设置">⚙</button>
+        <button class="nav-toggle" id="navToggle" aria-label="菜单">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== Hero 区 ==================== -->
+  <section class="hero" id="hero">
+    <div class="hero-content">
+      <div class="hero-badge">✦ 新一代 AI 创作平台</div>
+
+      <h1 class="hero-title">
+        <span class="highlight">AI工业化</span><br>
+        即刻造梦
+      </h1>
+
+      <p class="hero-subtitle">
+        基于最先进的人工智能技术，从文字到视频，从想法到作品。
+        释放你的创造力，让每一个奇思妙想都成为触手可及的现实。
+      </p>
+
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-large">✦ 开始创作</button>
+        <button class="btn btn-secondary btn-large">了解更多</button>
+      </div>
+
+      <!-- 示范视频展示区域 -->
+      <div class="video-showcase">
+        <div class="video-placeholder">
+          <div class="bg-glow"></div>
+          <button class="play-btn" aria-label="播放示范视频">▶</button>
+          <span class="play-label">观看示范</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 核心功能卡片 ==================== -->
+  <section class="section" id="video">
+    <div class="container">
+      <h2 class="section-title reveal">核心功能</h2>
+      <p class="section-subtitle reveal">让 AI 成为你的创作伙伴，多种方式释放想象力</p>
+
+      <div class="function-grid">
+        <!-- 卡片1: 文生视频 -->
+        <div class="function-card reveal">
+          <div class="function-icon">✍</div>
+          <h3 class="function-title">文生视频</h3>
+          <p class="function-desc">输入一段文字描述，AI 即刻生成精美视频。从概念到画面，只需一句话。</p>
+          <button class="btn btn-primary">立即使用 →</button>
+        </div>
+
+        <!-- 卡片2: 图生视频 -->
+        <div class="function-card reveal">
+          <div class="function-icon">🖼</div>
+          <h3 class="function-title">图生视频</h3>
+          <p class="function-desc">上传一张图片，AI 将其转化为动态视频。让静态画面拥有生命力。</p>
+          <button class="btn btn-primary">立即使用 →</button>
+        </div>
+
+        <!-- 卡片3: 首尾帧控制 -->
+        <div class="function-card reveal">
+          <div class="function-icon">🎬</div>
+          <h3 class="function-title">首尾帧控制</h3>
+          <p class="function-desc">指定视频的首帧和尾帧画面，AI 自动生成中间过渡。精细化把控每一帧。</p>
+          <button class="btn btn-primary">立即使用 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== AI绘画介绍区 ==================== -->
+  <section class="section feature-section" id="image">
+    <div class="container">
+      <div class="feature-grid reveal">
+        <div class="feature-visual">
+          <div class="feature-image">
+            <div class="icon-overlay">🎨</div>
+            <span class="feature-label">AI 绘画 · 文字生成图像</span>
+          </div>
+        </div>
+        <div class="feature-info">
+          <h3>
+            文字即画面<br>
+            <span class="highlight">AI 智能绘画</span>
+          </h3>
+          <p>
+            只需输入文字描述，AI 即可生成高质量的图像作品。
+            支持多种风格——写实、插画、油画、水彩、赛博朋克……
+            更有智能编辑功能，让修改变得轻而易举。
+          </p>
+          <div class="feature-tags">
+            <span class="feature-tag">文字绘图</span>
+            <span class="feature-tag">智能编辑</span>
+            <span class="feature-tag">风格迁移</span>
+            <span class="feature-tag">高清生成</span>
+          </div>
+          <button class="btn btn-primary">立即体验 AI 绘画 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 智能画布介绍区 ==================== -->
+  <section class="section feature-section" id="canvas">
+    <div class="container">
+      <div class="feature-grid reverse reveal">
+        <div class="feature-visual">
+          <div class="feature-image">
+            <div class="icon-overlay">✂</div>
+            <span class="feature-label">智能画布 · 创意无限</span>
+          </div>
+        </div>
+        <div class="feature-info">
+          <h3>
+            拓展想象<br>
+            <span class="highlight">智能画布编辑</span>
+          </h3>
+          <p>
+            智能画布让编辑从未如此简单。一键扩图延伸画面、智能消除移除多余元素、
+            局部重绘精确修改特定区域。你的创意，AI 帮你完善。
+          </p>
+          <div class="feature-tags">
+            <span class="feature-tag">扩图延伸</span>
+            <span class="feature-tag">智能消除</span>
+            <span class="feature-tag">局部重绘</span>
+            <span class="feature-tag">画布重排</span>
+          </div>
+          <button class="btn btn-primary">体验智能画布 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 社区展示区 ==================== -->
+  <section class="section" id="community">
+    <div class="container">
+      <h2 class="section-title reveal">创作者社区</h2>
+      <p class="section-subtitle reveal">来自社区用户的 AI 创作精选，更多精彩等你发现</p>
+
+      <div class="community-grid">
+        <div class="community-item reveal">
+          <div class="item-icon">🌌</div>
+          <div class="item-overlay"><span>梦幻星空</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">🏛</div>
+          <div class="item-overlay"><span>未来城市</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">🌺</div>
+          <div class="item-overlay"><span>数字花园</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">🤖</div>
+          <div class="item-overlay"><span>机械觉醒</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">🌊</div>
+          <div class="item-overlay"><span>深海秘境</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">🏔</div>
+          <div class="item-overlay"><span>云端幻境</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">🎭</div>
+          <div class="item-overlay"><span>幻彩面具</span></div>
+        </div>
+        <div class="community-item reveal">
+          <div class="item-icon">✨</div>
+          <div class="item-overlay"><span>星河万里</span></div>
+        </div>
+      </div>
+
+      <div class="community-cta reveal">
+        <button class="btn btn-ghost btn-large">浏览更多作品 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== Footer ==================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo" style="display:flex;align-items:center;gap:8px;">
+          <span style="width:28px;height:28px;border-radius:8px;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:#fff;">◈</span>
+          <span style="font-weight:700;font-size:0.95rem;">AI工业化</span>
+        </div>
+
+        <ul class="footer-links">
+          <li><a href="#">关于我们</a></li>
+          <li><a href="#">帮助中心</a></li>
+          <li><a href="#">用户协议</a></li>
+          <li><a href="#">隐私政策</a></li>
+          <li><a href="#">联系我们</a></li>
+        </ul>
+
+        <p class="footer-copyright">
+          &copy; 2025 AI工业化. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== JavaScript ==================== -->
+  <script>
+    // --- 粒子背景生成 ---
+    (function() {
+      const container = document.getElementById('particles');
+      const count = 40;
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const size = 1 + Math.random() * 3;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDuration = (15 + Math.random() * 25) + 's';
+        particle.style.animationDelay = (Math.random() * 20) + 's';
+        particle.style.opacity = 0.1 + Math.random() * 0.3;
+        container.appendChild(particle);
+      }
+    })();
+
+    // --- 导航毛玻璃滚动效果 ---
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // --- 移动端菜单 ---
+    const toggleBtn = document.getElementById('navToggle');
+    const navLinks = document.getElementById('navLinks');
+
+    toggleBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+      toggleBtn.textContent = navLinks.classList.contains('open') ? '✕' : '☰';
+    });
+
+    // 点击导航链接后关闭菜单
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        toggleBtn.textContent = '☰';
+      });
+    });
+
+    // --- 滚动显示动画 (IntersectionObserver) ---
+    const revealElements = document.querySelectorAll('.reveal');
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          // 可选：只触发一次
+          // revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    revealElements.forEach(el => revealObserver.observe(el));
+
+    // --- 演示视频占位点击 ---
+    document.querySelector('.video-placeholder')?.addEventListener('click', function() {
+      const btn = this.querySelector('.play-btn');
+      btn.textContent = '⏳';
+      btn.style.transform = 'scale(1.2)';
+      setTimeout(() => {
+        btn.textContent = '▶';
+        btn.style.transform = 'scale(1)';
+        alert('🚧 视频演示功能即将上线，敬请期待！');
+      }, 600);
+    });
+
+    // --- 按钮"了解更多"交互 ---
+    document.querySelector('.hero-actions .btn-secondary')?.addEventListener('click', function() {
+      document.getElementById('video').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // 首页各功能按钮跳转到对应页面
+    document.querySelectorAll('.function-card .btn').forEach(btn => {
+      const cards = document.querySelectorAll('.function-card');
+      cards.forEach((card, i) => {
+        const btns = card.querySelectorAll('.btn');
+        btns.forEach(b => {
+          b.addEventListener('click', function(e) {
+            const pages = ['pages/video.html', 'pages/video.html', 'pages/video.html'];
+            window.location.href = pages[i];
+          });
+        });
+      });
+    });
+
+    document.querySelector('.feature-info .btn')?.addEventListener('click', function() {
+      window.location.href = 'pages/image.html';
+    });
+
+    // 第二个feature button
+    const featureBtns = document.querySelectorAll('.feature-info .btn');
+    if (featureBtns.length > 1) {
+      featureBtns[1].addEventListener('click', function() {
+        window.location.href = 'pages/canvas.html';
+      });
+    }
+
+    document.querySelector('.community-cta .btn')?.addEventListener('click', function() {
+      window.location.href = 'pages/community.html';
+    });
+
+    // "开始创作"按钮跳转到视频页面
+    document.querySelector('.hero-actions .btn-primary')?.addEventListener('click', function() {
+      window.location.href = 'pages/video.html';
+    });
+
+
+
+    // --- 社区作品点击 ---
+    document.querySelectorAll('.community-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const title = this.querySelector('.item-overlay span')?.textContent || '作品';
+        alert('🖼 「' + title + '」 — 查看详情功能即将上线');
+      });
+    });
+
+
+  </script>
+
+</body>
+</html>
